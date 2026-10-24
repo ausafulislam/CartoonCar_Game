@@ -39,19 +39,56 @@ h1, h2, h3, p { margin-top: 0; }
 @media (min-width: 641px) {
   .phone { border-radius: 30px; height: min(100dvh - 28px, 960px); border: 3px solid rgba(255, 255, 255, 0.35); }
 }
-.side-info { display: none; }
-@media (min-width: 1150px) {
-  .side-info {
-    display: block;
-    width: 250px;
-    color: #ffffff;
-    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
-  }
-  .side-info h2 { font-size: 40px; line-height: 1.08; margin-bottom: 12px; }
-  .side-info h3 { font-size: 22px; }
-  .side-info p { font-size: 16px; opacity: 0.92; }
-  .side-info ul { padding-left: 18px; line-height: 1.75; font-size: 15px; }
+/* Side info rails — visual design (visibility is toggled by media queries at the end) */
+.side-info {
+  display: none;
+  color: #ffffff;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+  background: linear-gradient(180deg, rgba(10, 58, 120, 0.66), rgba(8, 44, 94, 0.6));
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 26px;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(7px);
+  padding: clamp(16px, 1.6vw, 26px);
+  max-height: calc(100dvh - 40px);
+  overflow-y: auto;
+  scrollbar-width: thin;
 }
+.side-info h2 {
+  font-size: clamp(27px, 2.3vw, 42px);
+  line-height: 1.06;
+  margin-bottom: 10px;
+  background: linear-gradient(180deg, #ffe98a, #ffb03a 55%, #ff8a2f);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: none;
+  filter: drop-shadow(0 3px 0 rgba(110, 45, 0, 0.5));
+}
+.side-info h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: clamp(18px, 1.5vw, 23px);
+  color: #ffe9a8;
+  margin-bottom: 10px;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+.side-info p { font-size: clamp(13.5px, 1.05vw, 16px); line-height: 1.5; opacity: 0.95; margin-bottom: 12px; }
+.side-info ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 9px; font-size: clamp(13px, 1vw, 15.5px); line-height: 1.45; }
+.side-info ul:not(.side-mission-list) li { position: relative; padding-left: 20px; }
+/* CSS-drawn bullet — no font-glyph dependency */
+.side-info ul:not(.side-mission-list) li::before {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 0.5em;
+  border-left: 8px solid #ffd93d;
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+}
+.side-info::-webkit-scrollbar { width: 6px; }
+.side-info::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.35); border-radius: 999px; }
 
 /* ================================ Top HUD ================================ */
 .top-hud {
@@ -778,28 +815,8 @@ h1, h2, h3, p { margin-top: 0; }
   background: linear-gradient(180deg, #57b6f2, #7cc24e);
 }
 
-/* ================================ PWA install button ============================== */
-.install-btn {
-  position: relative;
-  z-index: 5;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin: 10px auto 0;
-  padding: 9px 16px;
-  border-radius: 999px;
-  background: linear-gradient(180deg, #ffb03a, #ff7a2f);
-  color: #fff;
-  font-weight: 800;
-  font-size: 14.5px;
-  border: 3px solid #ffffff;
-  box-shadow: 0 5px 0 #c2511f, 0 9px 16px rgba(0, 0, 0, 0.25);
-  cursor: pointer;
-}
-.install-btn:active {
-  transform: translateY(3px);
-  box-shadow: 0 2px 0 #c2511f;
-}
+/* (The permanent Install Game button was removed — installation is now offered
+   by the automatic, timed InstallPopup in components/pwa.tsx.) */
 
 /* ================================ Offline banner ============================== */
 .offline-banner {
@@ -859,3 +876,623 @@ h1, h2, h3, p { margin-top: 0; }
 }
 
 /* ============================== Reduced motion ============================== */
+
+/* ==========================================================================
+   RESPONSIVE LAYER
+   Mobile portrait (< 641px) uses only the base rules above and is untouched.
+   Everything below activates for tablet / landscape / laptop / desktop.
+   Order matters: rail → landscape → 3-col grid → compact → micro → game.
+   ========================================================================== */
+
+/* ---- Tablet portrait (768–1149): compact logo rail beside the phone ----- */
+@media (min-width: 768px) and (max-width: 1149px) and (orientation: portrait) {
+  .stage { gap: clamp(12px, 1.8vw, 24px); padding: 0 clamp(10px, 1.6vw, 22px); }
+  .side-info.left { display: block; width: clamp(195px, 26vw, 250px); flex: 0 0 auto; }
+}
+
+/* ---- Any landscape: full-width screen card + reference-style home ------- */
+@media (orientation: landscape) and (min-width: 641px) {
+  .phone { width: min(calc(100vw - 28px), 1140px); }
+
+  /* compact HUD: smaller pills, tighter padding (portrait keeps its look).
+     Scoped to .top-hud so the gameplay HUD's coin pill keeps its slim sizing. */
+  .top-hud { padding: clamp(8px, 1.4vh, 14px) clamp(12px, 1.5vw, 20px) 0; gap: clamp(6px, 0.9vw, 12px); }
+  .top-hud .coin-pill { flex: 0 0 auto; min-width: clamp(140px, 13vw, 200px); }
+  .top-hud .heart-pill { margin-left: auto; }
+  .top-hud .profile-chip { width: clamp(46px, 6.4vh, 54px); height: clamp(46px, 6.4vh, 54px); border-radius: 15px; border-width: 2.5px; padding: 3px; }
+  .top-hud .profile-level { font-size: clamp(9.5px, 1.4vh, 11px); }
+  .top-hud .hud-pill { min-height: clamp(36px, 5.4vh, 42px); padding: 3px 5px 3px 4px; gap: 5px; }
+  .top-hud .pill-icon { width: clamp(25px, 3.6vh, 30px); height: clamp(25px, 3.6vh, 30px); }
+  .top-hud .pill-value { font-size: clamp(15px, 2.3vh, 18px); }
+  .top-hud .pill-plus { width: clamp(23px, 3.4vh, 26px); height: clamp(23px, 3.4vh, 26px); }
+
+  /* milestone bar + boosts — slimmer so the car stays the focus */
+  .milestone-card { margin: clamp(8px, 1.4vh, 14px) clamp(12px, 1.5vw, 20px) 0; }
+  .milestone-bar { height: clamp(26px, 3.6vh, 31px); }
+  .milestone-text { font-size: clamp(12.5px, 1.75vh, 15px); }
+  .daily-btn, .chest-btn { width: clamp(52px, 4.5vh, 60px); }
+  .boost-row { width: min(100%, 680px); margin-left: auto; margin-right: auto; gap: 5px; }
+  .boost-chip { font-size: clamp(11.5px, 1.5vh, 13.5px); padding: clamp(4px, 0.7vh, 6px) 6px; border-radius: 11px; border-width: 2px; }
+  .boost-note { margin-top: clamp(3px, 0.6vh, 6px); font-size: clamp(11px, 1.45vh, 13px); }
+
+  /* car stays large, centered and proportional (height-driven, aspect kept) */
+  .hero-area { min-height: 60px; align-items: center; overflow: hidden; padding: 0 12px; }
+  .hero-car-btn { height: 100%; width: auto; aspect-ratio: 1.42; max-width: min(58%, 580px); margin: 0 auto; }
+  .hero-car { width: 100%; height: 100%; object-fit: contain; object-position: center bottom; }
+  .car-nameplate { font-size: clamp(13px, 1.9vh, 15.5px); padding: 3px clamp(12px, 1.5vw, 16px); margin-top: clamp(2px, 0.5vh, 6px); }
+
+  /* prominent but not oversized actions — width tied to the card, not the viewport */
+  .home-actions { padding: clamp(6px, 1.4vh, 12px) clamp(12px, 1.6vw, 20px) clamp(8px, 1.6vh, 14px); }
+  .level-btn {
+    width: min(360px, 56%);
+    font-size: clamp(21px, 3.6vh, 29px);
+    padding: clamp(7px, 1.3vh, 11px) 18px;
+    border-width: 3px;
+    border-radius: clamp(18px, 2.6vh, 24px);
+    letter-spacing: 1.5px;
+    box-shadow: 0 6px 0 #1d8a12, 0 12px 22px rgba(0, 0, 0, 0.32), inset 0 2px 0 rgba(255, 255, 255, 0.6);
+  }
+  .home-sub-actions { margin-top: clamp(7px, 1.2vh, 11px); gap: clamp(7px, 0.9vw, 12px); }
+  .sub-action {
+    font-size: clamp(12px, 1.75vh, 14.5px);
+    padding: clamp(6px, 1.05vh, 9px) clamp(10px, 1.2vw, 15px);
+    border-width: 2.5px;
+    box-shadow: 0 4px 0 #1553a3, 0 7px 12px rgba(0, 0, 0, 0.22);
+  }
+  .sub-action.endless { box-shadow: 0 4px 0 #5323ad, 0 7px 12px rgba(0, 0, 0, 0.22); }
+  .sub-best { font-size: clamp(11px, 1.5vh, 13px); padding: 2px 8px; }
+
+  /* bottom nav: lighter on wide cards */
+  .bottom-nav { padding: clamp(4px, 0.7vh, 7px) 6px calc(env(safe-area-inset-bottom, 0px) + clamp(4px, 0.7vh, 7px)); border-top-width: 2.5px; }
+  .nav-item { font-size: clamp(10px, 1.45vh, 11.5px); padding: clamp(4px, 0.7vh, 6px) 2px; }
+  .nav-item .nav-icon svg { width: clamp(21px, 3.4vh, 26px); height: clamp(21px, 3.4vh, 26px); }
+  .nav-item.nav-home { margin-top: -16px; border-width: 2.5px; border-radius: 18px; padding-bottom: 6px; }
+}
+
+/* ---- Laptop & desktop (>=1150): three-column reference layout ---------- */
+@media (min-width: 1150px) {
+  .stage {
+    display: grid;
+    grid-template-columns: clamp(230px, 21vw, 330px) minmax(0, 1fr) clamp(230px, 21vw, 330px);
+    align-items: center;
+    gap: clamp(16px, 1.8vw, 34px);
+    padding: 14px clamp(16px, 1.8vw, 34px);
+    width: 100%;
+    max-width: 2440px;
+    margin: 0 auto;
+  }
+  .side-info { display: block; height: calc(100dvh - 40px); align-self: center; }
+  .phone { justify-self: center; width: min(480px, 100%); }
+}
+@media (min-width: 1150px) and (orientation: landscape) {
+  /* landscape centre card grows to the middle track (capped on ultrawide) */
+  .phone { width: 100%; max-width: 1480px; }
+}
+
+/* ---- Compact landscape (mobile / short windows): 3-column home ---------- */
+@media (orientation: landscape) and (min-width: 641px) and (max-height: 540px) {
+  .stage { display: flex; gap: 0; padding: 0; max-width: none; }
+  .side-info { display: none; }
+  .phone { width: calc(100vw - 12px); height: calc(100dvh - 12px); border-radius: 20px; }
+
+  .home-screen {
+    display: grid;
+    grid-template-columns: minmax(175px, 1fr) minmax(195px, 1.35fr) minmax(165px, 1fr);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    grid-template-areas: 'hud hud hud' 'milestone hero actions' 'note plate actions';
+    column-gap: 8px;
+    padding: 0 8px;
+  }
+  .top-hud { grid-area: hud; padding: calc(env(safe-area-inset-top, 0px) + 5px) 4px 0; gap: 5px; }
+  .profile-chip { width: 44px; height: 44px; border-radius: 13px; border-width: 2.5px; padding: 3px; }
+  .profile-level { font-size: 9.5px; bottom: -8px; }
+  .hud-pill { min-height: 34px; padding: 3px 4px 3px 3px; gap: 4px; }
+  .pill-icon { width: 24px; height: 24px; }
+  .pill-icon svg { width: 15px; height: 15px; }
+  .pill-value { font-size: 15px; }
+  .pill-value.small { font-size: 12.5px; }
+  .pill-sub { font-size: 9px; }
+  .pill-plus { width: 22px; height: 22px; }
+
+  .milestone-card { grid-area: milestone; margin: 5px 0 0; flex-direction: column; gap: 5px; }
+  .daily-btn, .chest-btn { width: 100%; height: 42px; flex-direction: row; gap: 7px; border-radius: 13px; }
+  .milestone-bar { height: 25px; }
+  .milestone-text { font-size: 12.5px; }
+  .boost-row { margin-top: 4px; gap: 4px; }
+  .boost-chip { font-size: 11.5px; padding: 3.5px 2px; border-radius: 9px; }
+  .boost-note { grid-area: note; margin: 2px 0 5px; font-size: 10.5px; }
+
+  .hero-area { grid-area: hero; min-height: 0; align-items: center; padding: 0 4px; overflow: hidden; }
+  .hero-car-btn { height: 100%; width: auto; aspect-ratio: 1.42; max-width: min(96%, 320px); margin: 0 auto; }
+  .car-nameplate { grid-area: plate; justify-self: center; align-self: center; margin: 2px 0 5px; font-size: 12.5px; padding: 2px 12px; }
+
+  .home-actions { grid-area: actions; padding: 4px 0 5px; display: flex; flex-direction: column; justify-content: center; }
+  .level-btn { width: 100%; font-size: clamp(18px, 5.4vh, 23px); padding: clamp(7px, 2.2vh, 10px) 12px; border-width: 3px; border-radius: 16px; letter-spacing: 1px; box-shadow: 0 5px 0 #1d8a12, 0 10px 16px rgba(0, 0, 0, 0.3), inset 0 2px 0 rgba(255, 255, 255, 0.6); }
+  /* compact balanced row for All Levels / Endless (wraps on very narrow columns) */
+  .home-sub-actions { flex-direction: row; flex-wrap: wrap; gap: 6px; margin-top: 7px; width: 100%; }
+  .sub-action { flex: 1 1 calc(50% - 3px); min-width: 0; justify-content: center; font-size: clamp(11.5px, 3.2vh, 13.5px); padding: 6px 4px; border-width: 2.5px; }
+  .sub-best { font-size: 10.5px; padding: 1px 6px; }
+
+  .bottom-nav { padding: 3px 4px calc(env(safe-area-inset-bottom, 0px) + 3px); border-top-width: 2px; }
+  .nav-item { font-size: 10px; padding: 3px 2px; border-radius: 12px; }
+  .nav-item .nav-icon svg { width: 20px; height: 20px; }
+  .nav-item.nav-home { margin-top: -12px; border-width: 2.5px; border-radius: 15px; padding-bottom: 4px; }
+  .nav-badge { top: -6px; right: -11px; }
+  .toast { bottom: 64px; max-width: 92%; font-size: 12.5px; }
+}
+
+/* ---- Micro landscape (very short windows, <=360px tall) ---------------- */
+@media (orientation: landscape) and (min-width: 641px) and (max-height: 360px) {
+  .boost-note { display: none; }
+  .daily-btn, .chest-btn { height: 40px; }
+  .milestone-bar { height: 25px; }
+  .milestone-text { font-size: 12.5px; }
+  .boost-chip { font-size: 11.5px; padding: 3px 2px; }
+  .top-hud { padding-top: calc(env(safe-area-inset-top, 0px) + 4px); }
+  .profile-chip { width: 42px; height: 42px; }
+  .hud-pill { min-height: 34px; }
+  .nav-item { padding: 3px 2px; }
+  .nav-item .nav-icon svg { width: 20px; height: 20px; }
+}
+
+/* ---- Missions panel (right rail — desktop only, hidden on Trophies) ---- */
+.side-missions { margin-top: 16px; padding-top: 14px; border-top: 2px dashed rgba(255, 255, 255, 0.3); }
+.side-info ul.side-mission-list { gap: 13px; }
+.side-mission { display: flex; flex-direction: column; gap: 5px; }
+.side-mission-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.side-mission-title { font-weight: 700; font-size: clamp(12.5px, 0.95vw, 14.5px); color: #ffffff; line-height: 1.25; }
+.side-mission-count { font-size: 12px; font-weight: 700; color: #cfe6ff; white-space: nowrap; }
+.side-mission-track { display: block; height: 10px; background: rgba(255, 255, 255, 0.24); border-radius: 999px; overflow: hidden; box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3); }
+.side-mission-fill { display: block; height: 100%; background: linear-gradient(90deg, #8df24d, #2cb81a); border-radius: inherit; transition: width 0.4s ease; }
+.side-mission.ready .side-mission-fill { background: linear-gradient(90deg, #ffe98a, #ffb020); }
+.side-mission.claimed { opacity: 0.6; }
+.side-mission-foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; min-height: 15px; font-size: 11.5px; font-weight: 700; }
+.side-mission-state { color: #8df24d; }
+.side-mission.ready .side-mission-state { color: #ffe98a; }
+.side-mission-reward { display: inline-flex; align-items: center; gap: 3px; color: #ffd98f; margin-left: auto; }
+
+/* ---- Wide screens: keep menu content readable (cap column width) ------- */
+@media (min-width: 900px) {
+  .panel-screen > *:not(.screen-header) {
+    width: min(860px, calc(100% - 28px));
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
+/* ---- Gameplay: align HUD + Phaser host to one centred play column -------
+   canvas is height-bound at 450:800 in landscape, so the overlay column
+   matches min(100% of viewport, 56.25% of its height). A 340px floor keeps
+   the HUD usable on very short screens (identical to full-width behaviour
+   in portrait, where 100% width is always the binding term). Portrait
+   geometry is therefore unchanged. */
+@supports (container-type: size) {
+  .game-viewport { container-type: size; --play-w: max(340px, min(100cqw, 56.25cqh)); }
+  .phaser-parent { left: 50%; right: auto; width: var(--play-w); transform: translateX(-50%); }
+  .game-hud { left: 50%; right: auto; width: var(--play-w); transform: translateX(-50%); }
+  .touch-controls { left: 50%; right: auto; width: var(--play-w); transform: translateX(-50%); }
+  .keyboard-hint { left: 50%; right: auto; width: var(--play-w); transform: translateX(-50%); }
+}
+
+/* ---- Automatic install popup (replaces the permanent Install Game button) ---- */
+.install-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 95; /* below offline/update banners, above screens/modals */
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(12, 28, 56, 0.38); /* gentle backdrop — keeps context visible */
+  backdrop-filter: blur(2px);
+  animation: fadeIn 0.2s ease;
+}
+.install-popup {
+  position: relative;
+  width: min(370px, 100%);
+  max-height: 88dvh;
+  overflow-y: auto;
+  background: #fff6da;
+  border: 4px solid #ffb03a;
+  border-radius: 24px;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.4);
+  padding: 24px 20px 20px;
+  text-align: center;
+  animation: popIn 0.26s cubic-bezier(0.2, 1.3, 0.4, 1);
+}
+.install-popup .modal-close {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  transform: none;
+}
+.install-popup .modal-close:active {
+  transform: translateY(2px);
+}
+.install-popup-icon {
+  width: 72px;
+  height: 72px;
+  border-radius: 18px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+}
+.install-popup h2 {
+  font-size: clamp(18px, 4.4vw, 21px);
+  color: #7a4a12;
+  margin: 12px 0 8px;
+  line-height: 1.2;
+}
+.install-popup p {
+  font-size: 14px;
+  color: #8a7a5c;
+  line-height: 1.5;
+  margin: 0;
+}
+.install-popup-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  margin-top: 14px;
+}
+.install-popup-actions .big-btn {
+  margin-top: 0;
+}
+@media (max-height: 440px) {
+  .install-popup { padding: 16px 16px 14px; }
+  .install-popup-icon { width: 54px; height: 54px; border-radius: 14px; }
+  .install-popup h2 { margin: 8px 0 6px; }
+  .install-popup p { font-size: 13px; }
+  .install-popup-actions { flex-direction: row; margin-top: 10px; }
+  .install-popup-actions .big-btn { flex: 1; padding-block: 11px; }
+}
+
+/* ====================== Reference-style side panels ====================== */
+/* Base look for the new sidebar content (applies wherever .side-info shows). */
+.level-chevron { display: none; }
+.side-logo { display: block; width: 100%; margin: 2px auto 14px; }
+.side-player {
+  display: flex; align-items: center; gap: 14px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 16px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+}
+.side-player-avatar {
+  position: relative; width: 64px; height: 64px; flex: 0 0 auto;
+  background: linear-gradient(180deg, #ffffff, #ffe9c4);
+  border: 3px solid #ffb03a; border-radius: 14px; padding: 4px;
+  box-shadow: 0 5px 12px rgba(0, 0, 0, 0.3);
+}
+.side-player-avatar img { width: 100%; height: 100%; object-fit: contain; }
+.side-player-level {
+  position: absolute; left: 50%; bottom: -9px; transform: translateX(-50%);
+  background: #2fbb3c; color: #fff; font-size: 11px; font-weight: 800;
+  padding: 1px 8px; border-radius: 999px; border: 2px solid #eaffea; white-space: nowrap;
+}
+.side-player-meta { display: flex; flex-direction: column; gap: 7px; min-width: 0; }
+.side-player-name { font-size: 22px; font-weight: 800; color: #fff; line-height: 1; }
+.side-player-pill {
+  align-self: flex-start;
+  background: linear-gradient(180deg, #3ad44f, #22b83c);
+  color: #fff; font-size: 15px; font-weight: 800;
+  padding: 4px 16px; border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
+}
+.side-big-btn {
+  display: flex; align-items: center; gap: 14px;
+  width: 100%; text-align: left;
+  padding: 15px 16px; border-radius: 18px;
+  border: 3px solid rgba(255, 255, 255, 0.92);
+  margin-bottom: 14px; color: #fff;
+}
+.side-big-btn.green { background: linear-gradient(180deg, #5edc5c, #2fb52f); box-shadow: 0 6px 0 #1d8f1e, 0 12px 20px rgba(0, 0, 0, 0.3); }
+.side-big-btn.purple { background: linear-gradient(180deg, #b06bff, #7a3ff2); box-shadow: 0 6px 0 #5323ad, 0 12px 20px rgba(0, 0, 0, 0.3); }
+.side-big-btn:active { transform: translateY(3px); }
+.side-big-ico { display: grid; place-items: center; flex: 0 0 auto; }
+.side-big-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.side-big-title { font-size: 21px; font-weight: 800; line-height: 1.1; }
+.side-big-sub { font-size: 13.5px; font-weight: 600; opacity: 0.92; line-height: 1.2; }
+.side-big-chev { flex: 0 0 auto; }
+
+/* Right panel: "How it works" + "Your Missions" cards */
+.side-card {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 20px;
+  padding: 16px 16px 18px;
+  margin-bottom: 16px;
+}
+.side-card h3 {
+  display: flex; align-items: center; gap: 12px;
+  font-size: 23px; font-weight: 800; color: #fff;
+  margin: 0 0 12px; padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.25);
+  text-shadow: none;
+}
+.side-hd-ico {
+  display: grid; place-items: center; width: 42px; height: 42px;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #3aa2f5, #1672dd);
+  border: 2px solid rgba(255, 255, 255, 0.55);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  flex: 0 0 auto;
+}
+.side-info ul.side-keys { gap: 11px; }
+.side-info ul.side-keys li {
+  display: flex; align-items: center; gap: 13px;
+  padding-left: 0; font-size: 16px; line-height: 1.3;
+}
+.side-info ul.side-keys li::before { content: none; }
+.side-keys .key-ico {
+  width: 46px; height: 46px; border-radius: 50%;
+  display: grid; place-items: center; flex: 0 0 auto;
+  background: linear-gradient(180deg, #3aa4f7, #1676e0);
+  border: 3px solid #ffffff;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+.side-keys li b { font-size: 17.5px; font-weight: 800; white-space: nowrap; }
+.side-keys li span { font-size: 15.5px; opacity: 0.94; }
+
+/* Mission rows: icon | title+bar | reward+count */
+.side-mission {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr) auto;
+  grid-template-areas: 'ico title reward' 'ico bar count';
+  align-items: center;
+  column-gap: 12px; row-gap: 5px;
+  padding-left: 0; position: static;
+}
+.side-mission .mi-ico {
+  grid-area: ico; width: 52px; height: 52px;
+  display: grid; place-items: center; border-radius: 50%;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+.mi-ico.mi-totalCoins { background: radial-gradient(circle at 35% 30%, #ffe9a0, #ffc42e 62%, #f0a61c); border: 3px solid #e09b1c; color: #7a4e00; }
+.mi-ico.mi-levelsCompleted { background: radial-gradient(circle at 35% 30%, #6fc5ff, #2e9bf5 65%, #1672dd); border: 3px solid #0f5fbe; color: #ffd24a; }
+.mi-ico.mi-cleanFinishes { background: #ffffff; border: 3px solid #e23b3b; color: #e23b3b; }
+.side-mission .side-mission-title { grid-area: title; align-self: end; font-size: 15.5px; font-weight: 700; color: #fff; }
+.side-mission .side-mission-reward { grid-area: reward; justify-self: end; align-self: end; color: #fff; font-size: 16px; font-weight: 800; display: inline-flex; align-items: center; gap: 4px; margin: 0; }
+.side-mission .side-mission-reward svg { color: #ffc42e; }
+.side-mission .side-mission-track { grid-area: bar; height: 14px; }
+.side-mission .side-mission-count { grid-area: count; justify-self: end; align-self: start; font-size: 15px; font-weight: 700; color: #eaf4ff; }
+.side-mission:has(.mi-levelsCompleted) .side-mission-fill { background: linear-gradient(90deg, #7dd3fc, #2e9bf5); }
+
+/* ============ Reference landscape GUI (laptop/desktop >=1150) ============ */
+@media (min-width: 1150px) and (orientation: landscape) {
+  :root { --ref-nav-h: clamp(86px, 12vh, 118px); }
+
+  .stage {
+    display: grid;
+    grid-template-columns: clamp(240px, 23vw, 385px) minmax(0, 1fr) clamp(240px, 23vw, 385px);
+    align-items: stretch;
+    gap: 5px;
+    padding: 26px 30px 6px;
+    max-width: none;
+    background:
+      linear-gradient(180deg, rgba(1, 40, 96, 0) 55%, rgba(1, 46, 105, 0.9) 100%),
+      url('/assets/environments/home-bg.jpg') top center / cover no-repeat,
+      linear-gradient(180deg, #028dfe 0%, #0157b0 60%, #013e99 100%);
+  }
+  .stage:has(.bottom-nav) { padding-bottom: calc(var(--ref-nav-h) + 6px); }
+
+  .side-info {
+    height: 100%; max-height: none;
+    background: linear-gradient(180deg, #0064bf 0%, #004ca0 55%, #0155ac 100%);
+    border: 2px solid rgba(120, 190, 255, 0.42);
+    border-radius: 26px;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+    backdrop-filter: none;
+    padding: clamp(16px, 1.7vw, 28px);
+    overflow-y: auto;
+  }
+
+  .phone {
+    width: 100%; max-width: none; height: 100%;
+    border: none; border-radius: 0; box-shadow: none;
+  }
+
+  /* ---- home: top HUD per reference ---- */
+  .home-shade-top { display: none; }
+  .top-hud { padding: 5px 4px 0; gap: clamp(8px, 1vw, 14px); }
+  .top-hud .profile-chip {
+    width: clamp(72px, 10.2vh, 96px); height: clamp(72px, 10.2vh, 96px);
+    border-radius: clamp(15px, 2.2vh, 20px);
+    background: linear-gradient(180deg, #ffffff, #fff4e0);
+    border: clamp(3px, 0.42vh, 4px) solid #ffc42e;
+    padding: 5px;
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.3);
+  }
+  .top-hud .profile-level {
+    font-size: clamp(11px, 1.6vh, 15px);
+    background: linear-gradient(180deg, #3ad44f, #22b83c);
+    padding: 2px clamp(7px, 1vh, 11px); bottom: -10px;
+  }
+  .top-hud .hud-pill {
+    min-height: clamp(50px, 6.8vh, 64px);
+    border: none;
+    padding: 5px 6px 5px clamp(8px, 1.2vh, 12px);
+    gap: clamp(7px, 1vh, 11px);
+    box-shadow: 0 8px 18px rgba(8, 40, 90, 0.28);
+  }
+  .top-hud .coin-pill { min-width: clamp(175px, 14.5vw, 240px); }
+  .top-hud .pill-icon { width: clamp(34px, 4.6vh, 44px); height: clamp(34px, 4.6vh, 44px); }
+  .top-hud .pill-icon svg { width: clamp(21px, 2.9vh, 27px); height: clamp(21px, 2.9vh, 27px); }
+  .top-hud .pill-value { font-size: clamp(21px, 3.2vh, 30px); color: #16233a; }
+  .top-hud .pill-plus { width: clamp(34px, 4.6vh, 44px); height: clamp(34px, 4.6vh, 44px); }
+  .top-hud .pill-plus svg { width: clamp(20px, 2.8vh, 26px); height: clamp(20px, 2.8vh, 26px); }
+
+  /* ---- milestone bar + boosts + treasure tile ---- */
+  .milestone-card {
+    position: relative;
+    display: flex; align-items: flex-start; gap: clamp(10px, 1.4vw, 16px);
+    margin: clamp(9px, 1.4vh, 14px) clamp(24px, 2.2vw, 36px) 0;
+  }
+  .daily-btn {
+    position: absolute; left: -10px; top: clamp(6px, 0.8vh, 8px);
+    width: clamp(28px, 3.4vh, 33px); height: clamp(28px, 3.4vh, 33px);
+    min-height: 0; padding: 0; z-index: 3;
+    display: grid; place-items: center;
+    background: #f0342e; border: 2px solid #ffffff; border-radius: 50%;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.35);
+    animation: none;
+  }
+  .daily-btn svg, .daily-btn .daily-label { display: none; }
+  .daily-btn .dot-badge {
+    position: static; width: auto; height: auto;
+    background: none; border: none; font-size: clamp(15px, 1.9vh, 17px);
+  }
+  .daily-btn:not(.ready) { display: none; }
+  .milestone-main { flex: 1 1 auto; min-width: 0; }
+  .milestone-bar {
+    height: clamp(36px, 4.9vh, 46px);
+    border: none;
+    background: linear-gradient(180deg, #7b4cf5, #5a2be0);
+    box-shadow: 0 8px 16px rgba(40, 10, 120, 0.35), inset 0 3px 6px rgba(0, 0, 0, 0.28);
+    font-size: clamp(18px, 2.7vh, 25px);
+    padding: 3px clamp(14px, 2vw, 22px);
+  }
+  .boost-row { margin-top: clamp(7px, 1.1vh, 11px); gap: clamp(9px, 1.1vw, 15px); }
+  .boost-chip {
+    flex: 1 1 0; min-width: 0;
+    font-size: clamp(15px, 2.1vh, 20px);
+    padding: clamp(7px, 1.2vh, 11px) 8px;
+    border-radius: 999px;
+    background: #f2f8fe; color: #17408e;
+    border: 2px solid #cbe4fa;
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.16);
+  }
+  .boost-chip.active {
+    background: linear-gradient(180deg, #fbb04a, #f08a2b);
+    color: #ffffff; border-color: #ffe7c4;
+    box-shadow: 0 5px 12px rgba(190, 90, 10, 0.35);
+  }
+  .chest-btn {
+    width: clamp(64px, 8.3vh, 78px); height: clamp(66px, 8.5vh, 80px);
+    flex-direction: column; gap: 1px;
+    background: linear-gradient(180deg, #f9f2dc, #efe3c2);
+    border: 2px solid #e4d3a6; border-radius: 16px;
+    color: #3e4470;
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.25);
+    padding: 6px 4px;
+  }
+  .chest-btn:disabled { opacity: 1; }
+  .chest-ico svg { width: clamp(24px, 3.4vh, 32px); height: clamp(24px, 3.4vh, 32px); }
+  .chest-value { font-size: clamp(15px, 2.1vh, 20px); font-weight: 800; }
+  .boost-note {
+    margin: clamp(6px, 0.9vh, 9px) calc(clamp(24px, 2.2vw, 36px) + clamp(64px, 8.3vh, 78px) + 16px) 0 clamp(24px, 2.2vw, 36px);
+    font-size: clamp(14px, 1.9vh, 18px);
+    text-align: center;
+    text-shadow: 0 2px 6px rgba(0, 20, 60, 0.65);
+  }
+
+  /* ---- hero + main action ---- */
+  .car-nameplate { font-size: clamp(15px, 2.3vh, 22px); padding: 4px clamp(14px, 2vw, 20px); }
+  .home-actions { padding: clamp(8px, 1.4vh, 12px) 0 clamp(10px, 1.7vh, 15px); }
+  .level-btn {
+    width: min(430px, 56%);
+    font-size: clamp(28px, 4.3vh, 41px);
+    padding: clamp(11px, 2vh, 17px) clamp(20px, 2.6vw, 30px);
+    border-width: 4px;
+    border-radius: clamp(22px, 3vh, 28px);
+    gap: clamp(10px, 1.6vw, 18px);
+    letter-spacing: 2px;
+    box-shadow: 0 8px 0 #1d8a12, 0 18px 30px rgba(0, 0, 0, 0.38), inset 0 3px 0 rgba(255, 255, 255, 0.65);
+  }
+  .level-chevron { display: block; flex: 0 0 auto; }
+  .home-sub-actions { display: none; }
+
+  /* ---- full-width bottom navigation ---- */
+  .bottom-nav {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 70;
+    height: var(--ref-nav-h);
+    display: flex; justify-content: space-between; align-items: stretch;
+    grid-template-columns: none;
+    gap: 0;
+    padding: 3px clamp(240px, 23vw, 385px) calc(env(safe-area-inset-bottom, 0px) + 4px);
+    background: linear-gradient(180deg, #0368c8 0%, #0147a6 100%);
+    border-top: 3px solid #0688e8;
+    border-radius: 0;
+    overflow: visible;
+  }
+  .nav-item {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: clamp(2px, 0.5vh, 5px);
+    color: #ffffff;
+    font-size: clamp(14px, 2vh, 19px); font-weight: 700;
+    padding: clamp(6px, 1vh, 10px) clamp(6px, 0.9vw, 14px);
+    border-radius: 16px;
+    background: transparent; box-shadow: none;
+    border: 2px solid transparent;
+  }
+  .nav-item .nav-icon svg { width: clamp(26px, 3.6vh, 34px); height: clamp(26px, 3.6vh, 34px); }
+  .nav-item.active {
+    background: linear-gradient(180deg, #4aa5fd, #2e94fb);
+    border-color: rgba(255, 255, 255, 0.55);
+    color: #ffffff;
+    box-shadow: 0 6px 14px rgba(0, 30, 70, 0.35);
+  }
+  .nav-item.nav-home {
+    margin-top: 4px; margin-bottom: clamp(8px, 1.7vh, 16px);
+    background: linear-gradient(180deg, #4aa5fd, #2e94fb);
+    border: 2px solid rgba(255, 255, 255, 0.55);
+    border-radius: 16px;
+    color: #ffffff;
+    box-shadow: 0 6px 14px rgba(0, 30, 70, 0.35);
+    padding-bottom: clamp(6px, 1vh, 10px);
+  }
+  .nav-item.nav-home.active { background: linear-gradient(180deg, #57abff, #3599fb); }
+  .toast { bottom: calc(var(--ref-nav-h) + 14px); }
+}
+
+/* ---- Reference fine-tuning ---- */
+@media (min-width: 1150px) and (orientation: landscape) {
+  .side-logo { width: calc(100% + 44px); margin: 2px -22px 14px; }
+  .phone { margin-top: -26px; height: calc(100% + 26px); }
+  .home-bg { object-position: center 20%; }
+  .level-btn { padding: clamp(9px, 1.6vh, 14px) clamp(20px, 2.6vw, 30px); }
+  .side-mission .side-mission-title { font-size: 15px; }
+  .side-mission .side-mission-reward,
+  .side-mission .side-mission-count { white-space: nowrap; font-size: 15px; }
+  .bottom-nav { padding-inline: clamp(233px, 22.6vw, 378px); }
+}
+@media (min-width: 1150px) and (orientation: landscape) {
+  .level-btn { padding: clamp(8px, 1.4vh, 12px) clamp(20px, 2.6vw, 30px); }
+}
+@media (min-width: 1150px) and (orientation: landscape) {
+  /* content must scroll INSIDE panels, never stretch the grid track */
+  .side-info, .phone { min-height: 0; }
+}
+@media (min-width: 1150px) and (orientation: landscape) {
+  .stage {
+    height: 100dvh;
+    grid-template-rows: minmax(0, 1fr);
+  }
+}
+
+/* ---- Seamless connected landscape (user request) ---- */
+@media (min-width: 1150px) and (orientation: landscape) {
+  /* no gaps: columns touch each other, the sides, and the bottom nav */
+  .stage { gap: 0; padding: 26px 0 0; }
+  .stage:has(.bottom-nav) { padding-bottom: 0; }
+  .side-info { padding-bottom: calc(var(--ref-nav-h) + 18px); }
+
+  /* center: hide the town image — the unified stage backdrop shows instead */
+  .home-bg { display: none; }
+  .home-screen { background: transparent; }
+  .phone { background: transparent; }
+  .home-actions { padding-bottom: calc(var(--ref-nav-h) + 14px); }
+
+  /* hide scrollbars (scrolling keeps working) */
+  .stage, .stage * { scrollbar-width: none; -ms-overflow-style: none; }
+  .stage *::-webkit-scrollbar { display: none; width: 0; height: 0; }
+}
+
+/* ---- Landscape background: provided wide town scene ---- */
+@media (min-width: 1150px) and (orientation: landscape) {
+  .stage {
+    background:
+      linear-gradient(180deg, rgba(1, 40, 96, 0) 74%, rgba(1, 40, 96, 0.42) 100%),
+      url('/assets/environments/landscape-bg.png') center / cover no-repeat,
+      #4fb0f5;
+  }
+}

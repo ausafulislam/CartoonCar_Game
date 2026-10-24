@@ -123,6 +123,7 @@ export function HomeScreen(props: HomeProps) {
       <div className="home-actions">
         <button type="button" className="level-btn" onClick={() => { clickSfx(); props.onPlay() }}>
           LEVEL {props.currentLevel}
+          <ChevronRight className="level-chevron" size={34} strokeWidth={3.4} aria-hidden="true" />
         </button>
         <div className="home-sub-actions">
           <button type="button" className="sub-action" onClick={() => { clickSfx(); props.onOpenLevels() }}>
