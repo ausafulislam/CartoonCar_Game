@@ -1,0 +1,31 @@
+{
+  "name": "cartoon-car-adventure",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "oxlint",
+    "preview": "vite preview",
+    "test:smoke": "node scripts/smoke.mjs",
+    "test:progression": "node scripts/progression.mjs"
+  },
+  "dependencies": {
+    "lucide-react": "^1.61.0",
+    "phaser": "^3.90.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "oxlint": "^1.88.0",
+    "playwright-core": "^1.57.0",
+    "typescript": "~6.0.3",
+    "vite": "^8.3.4"
+  },
+  "description": "Cartoon Car Adventure \u2014 a colorful, family-friendly cartoon driving game for the browser (React + TypeScript + Phaser 3)."
+}
