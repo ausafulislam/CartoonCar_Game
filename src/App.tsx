@@ -87,6 +87,9 @@ export default function App() {
   const toastTimer = useRef<number | null>(null)
   const prevCoins = useRef(save.coins)
   const musicStarted = useRef(false)
+  const purchaseLockRef = useRef(false)
+  const missionLockRef = useRef(false)
+  const milestoneLockRef = useRef(false)
 
   /* --- PWA / service worker --- */
   const { updateServiceWorker } = useRegisterSW({
@@ -288,12 +291,15 @@ export default function App() {
   )
 
   const confirmPurchase = useCallback(() => {
+    if (purchaseLockRef.current) return
     if (!purchase) return
+    purchaseLockRef.current = true
     const cur = saveRef.current
     if (purchase.kind === 'car') {
       const c = purchase.car
       if (cur.ownedCars.includes(c.id) || cur.coins < c.price) {
         audio.denied()
+        purchaseLockRef.current = false
         return
       }
       update((d) => {
@@ -307,6 +313,7 @@ export default function App() {
       const up = purchase.up
       if (cur.upgrades[up.id] || cur.coins < up.price) {
         audio.denied()
+        purchaseLockRef.current = false
         return
       }
       update((d) => {
@@ -317,15 +324,19 @@ export default function App() {
       notify(`${up.name} installed!`)
     }
     setPurchase(null)
+    setTimeout(() => { purchaseLockRef.current = false }, 300)
   }, [purchase, update, notify])
 
   const claimMission = useCallback(
     (id: string) => {
+      if (missionLockRef.current) return
       const m = MISSIONS.find((x) => x.id === id)
       if (!m) return
+      missionLockRef.current = true
       const cur = saveRef.current
       if (cur.claimedMissions.includes(id) || missionProgress(m, cur) < m.target) {
         audio.denied()
+        missionLockRef.current = false
         return
       }
       update((d) => {
@@ -334,22 +345,26 @@ export default function App() {
       })
       audio.reward()
       notify(`Mission complete: +${m.reward} coins!`)
+      setTimeout(() => { missionLockRef.current = false }, 300)
     },
     [update, notify],
   )
 
   const claimMilestone = useCallback(() => {
+    if (milestoneLockRef.current) return
     const cur = saveRef.current
     if (cur.stats.totalCoins - cur.milestonesClaimed * MILESTONE_EVERY < MILESTONE_EVERY) {
       notify(`Collect ${MILESTONE_EVERY} lifetime coins to open the treasure.`)
       return
     }
+    milestoneLockRef.current = true
     update((d) => {
       d.milestonesClaimed += 1
       d.coins += MILESTONE_REWARD
     })
     audio.reward()
     notify(`Treasure opened: +${MILESTONE_REWARD} coins!`)
+    setTimeout(() => { milestoneLockRef.current = false }, 300)
   }, [update, notify])
 
   const claimDaily = useCallback(() => {

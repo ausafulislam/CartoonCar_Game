@@ -61,15 +61,37 @@ export function GameViewport(props: GameViewportProps) {
   const finishedRef = useRef(false)
   const propsRef = useRef(props)
   propsRef.current = props
+  const retryingRef = useRef(false)
+  const pauseToggleRef = useRef(false)
 
   const [hud, setHud] = useState<HudState>(IDLE_HUD)
   const [paused, setPaused] = useState(false)
   const [result, setResult] = useState<{ raw: RunResult; summary: FinishSummary } | null>(null)
   const [pressed, setPressed] = useState<TouchInput>({ left: false, right: false, up: false, down: false })
 
+  // Throttled visual feedback for touch controls — Phaser reads inputRef
+  // immediately (zero latency), React only re-renders the pressed styling
+  // at most once per animation frame.
+  const visualPressedRef = useRef<TouchInput>({ left: false, right: false, up: false, down: false })
+  const rafRef = useRef<number | null>(null)
+
+  const flushVisualInput = useCallback(() => {
+    setPressed(visualPressedRef.current)
+    rafRef.current = null
+  }, [])
+
   const setInput = useCallback((key: keyof TouchInput, value: boolean) => {
     inputRef.current[key] = value
-    setPressed((p) => (p[key] === value ? p : { ...p, [key]: value }))
+    visualPressedRef.current[key] = value
+    if (rafRef.current === null) {
+      rafRef.current = requestAnimationFrame(flushVisualInput)
+    }
+  }, [flushVisualInput])
+
+  useEffect(() => {
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current)
+    }
   }, [])
 
   /* ------------------------- Phaser lifecycle ------------------------- */
@@ -94,7 +116,10 @@ export function GameViewport(props: GameViewportProps) {
         case 'win': audio.win(); break
         case 'lose': audio.lose(); break
         case 'pauseKey':
+          if (pauseToggleRef.current) break
+          pauseToggleRef.current = true
           setPaused((p) => !p)
+          setTimeout(() => { pauseToggleRef.current = false }, 250)
           break
       }
     }
@@ -154,8 +179,10 @@ export function GameViewport(props: GameViewportProps) {
     return () => document.removeEventListener('visibilitychange', onVis)
   }, [result])
 
-  const doRetry = () => {
-    if (!props.onRetryRequest()) return
+  const doRetry = useCallback(() => {
+    if (retryingRef.current) return
+    if (!propsRef.current.onRetryRequest()) return
+    retryingRef.current = true
     clickSfx()
     finishedRef.current = false
     setResult(null)
@@ -163,7 +190,9 @@ export function GameViewport(props: GameViewportProps) {
     setHud(IDLE_HUD)
     apiRef.current?.restart()
     audio.startEngine()
-  }
+    // Reset guard after the scene has restarted and is ready to accept input again
+    setTimeout(() => { retryingRef.current = false }, 300)
+  }, [])
 
   const bind = (key: keyof TouchInput) => ({
     onPointerDown: (e: React.PointerEvent) => {

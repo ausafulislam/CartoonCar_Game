@@ -53,6 +53,303 @@ h1, h2, h3, p { margin-top: 0; }
   .side-info ul { padding-left: 18px; line-height: 1.75; font-size: 15px; }
 }
 
+/* ================================ Landscape layout (tablet & desktop) ================================ */
+/* On landscape screens large enough, switch to a desktop composition:
+   Left info panel | Center game viewport | Right info panel */
+@media (min-width: 1024px) and (orientation: landscape) {
+  .stage {
+    display: grid;
+    grid-template-columns: 320px 1fr 320px;
+    height: 100dvh;
+    padding: 0;
+    gap: 0;
+    align-items: stretch;
+  }
+
+  .phone {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    max-height: none;
+    border-radius: 0;
+    border: none;
+    box-shadow: none;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .side-info {
+    display: block;
+    width: 320px;
+    padding: 40px 28px;
+    overflow-y: auto;
+  }
+
+  .side-info.left {
+    order: 1;
+  }
+
+  .phone {
+    order: 2;
+  }
+
+  .side-info.right {
+    order: 3;
+  }
+
+  /* Rotate the game viewport to landscape — keeps 450×800 game world,
+     but visually fills a landscape area on big screens */
+  .game-viewport {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .phaser-parent {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: rotate(90deg) translate(-50%, -50%);
+    transform-origin: center;
+    width: 100vh;
+    height: 100vw;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .phaser-parent canvas {
+    display: block;
+    image-rendering: pixelated;
+  }
+
+  /* Hide touch controls on landscape desktop — keyboard is used instead */
+  .touch-controls {
+    display: none !important;
+  }
+
+  /* Larger HUD for landscape desktop */
+  .game-hud {
+    padding: calc(env(safe-area-inset-top, 0px) + 16px) 20px 0;
+  }
+
+  .round-btn {
+    width: 56px;
+    height: 56px;
+  }
+
+  .objective-label {
+    font-size: 16px;
+  }
+
+  .score-chip,
+  .health-chip {
+    font-size: 16px;
+    padding: 6px 14px;
+  }
+
+  .speedo strong {
+    font-size: 28px;
+  }
+
+  /* Scale up home screen elements on landscape */
+  .level-btn {
+    font-size: clamp(28px, 5vw, 40px);
+    padding: clamp(12px, 2.5vh, 16px) clamp(24px, 5vw, 32px);
+  }
+
+  .home-actions { padding: 20px 40px 24px; }
+
+  .hero-car-btn {
+    width: min(70%, 420px);
+  }
+
+  .hero-car {
+    width: 100%;
+  }
+
+  /* Larger typography in side panels */
+  .side-info h2 {
+    font-size: clamp(32px, 6vw, 48px);
+  }
+
+  .side-info h3 {
+    font-size: clamp(20px, 3vw, 26px);
+  }
+
+  .side-info p {
+    font-size: clamp(14px, 2vw, 18px);
+  }
+
+  .side-info ul {
+    font-size: clamp(13px, 2vw, 16px);
+    line-height: 1.85;
+  }
+}
+
+/* Larger desktop — wider side panels */
+@media (min-width: 1366px) and (orientation: landscape) {
+  .stage {
+    grid-template-columns: 400px 1fr 400px;
+  }
+
+  .side-info {
+    width: 400px;
+    padding: 60px 40px;
+  }
+
+  .side-info h2 {
+    font-size: clamp(40px, 7vw, 56px);
+  }
+}
+
+/* Very large desktop */
+@media (min-width: 1920px) and (orientation: landscape) {
+  .stage {
+    grid-template-columns: 480px 1fr 480px;
+  }
+
+  .side-info {
+    width: 480px;
+    padding: 80px 56px;
+  }
+
+  .side-info h2 {
+    font-size: clamp(48px, 8vw, 64px);
+  }
+}
+
+/* Touch control visibility on touch-capable devices (portrait mobile) */
+@media (pointer: coarse) {
+  .touch-controls {
+    display: flex;
+  }
+}
+
+/* Hide touch controls on fine-pointer devices (mouse/laptop/desktop) */
+@media (hover: hover) and (pointer: fine) {
+  .touch-controls {
+    display: none;
+  }
+  .keyboard-hint {
+    display: block;
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 116px;
+    z-index: 9;
+    text-align: center;
+    margin: 0;
+    color: rgba(255, 255, 255, 0.82);
+    font-size: 12px;
+    font-weight: 600;
+    text-shadow: 0 1px 4px rgba(0, 30, 60, 0.8);
+    pointer-events: none;
+  }
+}
+
+/* Tablet portrait (641px–1023px) — fluid scaling */
+@media (min-width: 641px) and (max-width: 1023px) and (orientation: portrait) {
+  .phone {
+    width: min(560px, 100vw);
+  }
+
+  .level-btn {
+    font-size: clamp(28px, 5vw, 36px);
+    padding: clamp(10px, 2vh, 14px) clamp(20px, 4vw, 26px);
+  }
+
+  .screen-header h1 {
+    font-size: clamp(24px, 4vw, 32px);
+  }
+
+  .big-btn {
+    font-size: clamp(16px, 2vw, 19px);
+    padding: clamp(10px, 2vh, 13px) clamp(14px, 3vw, 18px);
+  }
+
+  .shop-btn {
+    font-size: clamp(13px, 2vw, 15px);
+    padding: clamp(7px, 1.5vh, 10px) clamp(12px, 2.5vw, 16px);
+  }
+}
+
+/* Tablet landscape (641px–1023px) — use desktop grid but narrower panels */
+@media (min-width: 641px) and (max-width: 1023px) and (orientation: landscape) {
+  .stage {
+    display: grid;
+    grid-template-columns: 240px 1fr 240px;
+    height: 100dvh;
+    padding: 0;
+    gap: 0;
+    align-items: stretch;
+  }
+
+  .phone {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    max-height: none;
+    border-radius: 0;
+    border: none;
+    box-shadow: none;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .side-info {
+    display: block;
+    width: 240px;
+    padding: 28px 20px;
+    overflow-y: auto;
+  }
+
+  .side-info.left { order: 1; }
+  .phone { order: 2; }
+  .side-info.right { order: 3; }
+
+  .game-viewport {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .phaser-parent {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: rotate(90deg) translate(-50%, -50%);
+    transform-origin: center;
+    width: 100vh;
+    height: 100vw;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .touch-controls {
+    display: none !important;
+  }
+
+  .game-hud {
+    padding: calc(env(safe-area-inset-top, 0px) + 12px) 16px 0;
+  }
+
+  .round-btn {
+    width: 52px;
+    height: 52px;
+  }
+
+  .level-btn {
+    font-size: clamp(24px, 5vw, 34px);
+    padding: clamp(10px, 2.5vh, 14px) clamp(20px, 4vw, 28px);
+  }
+}
+
 /* ================================ Top HUD ================================ */
 .top-hud {
   position: relative;
