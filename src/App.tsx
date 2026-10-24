@@ -711,6 +711,37 @@ export default function App() {
           <li>Boost ×2 / ×3 = bigger rewards, busier roads</li>
           <li>Progress saves automatically in your browser</li>
         </ul>
+        {tab !== 'trophies' && (
+          <div className="side-missions">
+            <h3>
+              <Trophy size={19} /> Your Missions
+            </h3>
+            <ul className="side-mission-list">
+              {MISSIONS.slice(0, 3).map((m) => {
+                const prog = Math.min(m.target, missionProgress(m, save))
+                const claimed = save.claimedMissions.includes(m.id)
+                const ready = prog >= m.target && !claimed
+                return (
+                  <li key={m.id} className={`side-mission ${ready ? 'ready' : ''} ${claimed ? 'claimed' : ''}`}>
+                    <span className="side-mission-head">
+                      <span className="side-mission-title">{m.description}</span>
+                      <span className="side-mission-count">{fmt(prog)} / {fmt(m.target)}</span>
+                    </span>
+                    <span className="side-mission-track">
+                      <span className="side-mission-fill" style={{ width: `${Math.round((prog / m.target) * 100)}%` }} />
+                    </span>
+                    <span className="side-mission-foot">
+                      <span className="side-mission-state">{claimed ? '✓ Claimed' : ready ? 'Ready to claim!' : ''}</span>
+                      <span className="side-mission-reward">
+                        <Coins size={12} /> +{m.reward}
+                      </span>
+                    </span>
+                  </li>
+                )
+              })}
+            </ul>
+          </div>
+        )}
       </aside>
     </div>
   )
