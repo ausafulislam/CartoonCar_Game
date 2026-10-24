@@ -44,6 +44,8 @@ import {
 import { audio } from './lib/audio'
 import { BottomNav, CoinPrice, Modal, Stars, clickSfx, type Tab } from './components/ui'
 import type { FinishSummary } from './components/GameViewport'
+import { InstallButton, OfflineIndicator, UpdatePrompt, captureBeforeInstallPrompt } from './components/pwa'
+import { useRegisterSW } from 'virtual:pwa-register/react'
 
 // Phaser is the biggest dependency — load it only when a race starts so the
 // home screen paints instantly.
@@ -81,9 +83,25 @@ export default function App() {
   const [toast, setToast] = useState<string | null>(null)
   const [coinPulse, setCoinPulse] = useState(false)
   const [nowTick, setNowTick] = useState(() => Date.now())
+  const [needRefresh, setNeedRefresh] = useState(false)
   const toastTimer = useRef<number | null>(null)
   const prevCoins = useRef(save.coins)
   const musicStarted = useRef(false)
+
+  /* --- PWA / service worker --- */
+  const { updateServiceWorker } = useRegisterSW({
+    immediate: true,
+    onNeedRefresh: () => {
+      setNeedRefresh(true)
+    },
+    onRegisterError: (err: unknown) => {
+      console.warn('Service worker registration failed:', err)
+    },
+  })
+
+  useEffect(() => {
+    captureBeforeInstallPrompt()
+  }, [])
 
   const commit = useCallback((next: SaveData) => {
     saveRef.current = next
@@ -402,6 +420,10 @@ export default function App() {
 
   return (
     <div className="stage">
+      <OfflineIndicator />
+      {needRefresh && (
+        <UpdatePrompt needRefresh={needRefresh} updateServiceWorker={updateServiceWorker} />
+      )}
       <aside className="side-info left" aria-hidden="true">
         <h2>Cartoon Car<br />Adventure</h2>
         <p>Drive, dodge and collect coins through five Sunny cartoon levels — right in your browser.</p>
@@ -436,23 +458,26 @@ export default function App() {
         ) : (
           <>
             {tab === 'home' && (
-              <HomeScreen
-                save={save}
-                car={car}
-                currentLevel={currentLevel}
-                heartTimerLabel={heartTimerLabel}
-                coinPulse={coinPulse}
-                onPlay={() => openIntro(getLevel(currentLevel))}
-                onOpenLevels={() => setModal('levels')}
-                onEndless={() => startRun(null)}
-                onDaily={() => setModal('daily')}
-                onClaimMilestone={claimMilestone}
-                onBoostChange={(b) => update((d) => { d.boost = b })}
-                onCycleCar={cycleCar}
-                onOpenGarage={() => setTab('garage')}
-                onCoinsPlus={() => setModal('earn')}
-                onHeartsPlus={() => setModal('hearts')}
-              />
+              <>
+                <HomeScreen
+                  save={save}
+                  car={car}
+                  currentLevel={currentLevel}
+                  heartTimerLabel={heartTimerLabel}
+                  coinPulse={coinPulse}
+                  onPlay={() => openIntro(getLevel(currentLevel))}
+                  onOpenLevels={() => setModal('levels')}
+                  onEndless={() => startRun(null)}
+                  onDaily={() => setModal('daily')}
+                  onClaimMilestone={claimMilestone}
+                  onBoostChange={(b) => update((d) => { d.boost = b })}
+                  onCycleCar={cycleCar}
+                  onOpenGarage={() => setTab('garage')}
+                  onCoinsPlus={() => setModal('earn')}
+                  onHeartsPlus={() => setModal('hearts')}
+                />
+                <InstallButton />
+              </>
             )}
             {tab === 'garage' && (
               <GarageScreen

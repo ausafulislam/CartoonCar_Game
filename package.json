@@ -15,7 +15,8 @@
     "lucide-react": "^1.61.0",
     "phaser": "^3.90.0",
     "react": "^19.3.1",
-    "react-dom": "^19.3.1"
+    "react-dom": "^19.3.1",
+    "vite-plugin-pwa": "^0.21.2"
   },
   "devDependencies": {
     "@types/node": "^24.19.2",
@@ -27,5 +28,5 @@
     "typescript": "~6.0.3",
     "vite": "^8.3.4"
   },
-  "description": "Cartoon Car Adventure \u2014 a colorful, family-friendly cartoon driving game for the browser (React + TypeScript + Phaser 3)."
+  "description": "Cartoon Car Adventure — a colorful, family-friendly cartoon driving game for the browser (React + TypeScript + Phaser 3)."
 }
