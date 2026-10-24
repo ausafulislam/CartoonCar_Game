@@ -45,6 +45,17 @@ import { audio } from './lib/audio'
 import { BottomNav, CoinPrice, Modal, Stars, clickSfx, type Tab } from './components/ui'
 import type { FinishSummary } from './components/GameViewport'
 import { InstallPopup, OfflineIndicator, UpdatePrompt, captureBeforeInstallPrompt } from './components/pwa'
+import {
+  ArrowDown as RefArrowDown,
+  ArrowRight as RefArrowRight,
+  ArrowUp as RefArrowUp,
+  ChevronRight as RefChevronRight,
+  Lightbulb as RefLightbulb,
+  Map as RefMap,
+  Ban as RefNoSymbol,
+  Pause as RefPause,
+  Star as RefStar,
+} from 'lucide-react'
 import { useRegisterSW } from 'virtual:pwa-register/react'
 
 // Phaser is the biggest dependency — load it only when a race starts so the
@@ -427,15 +438,34 @@ export default function App() {
       {/* Automatic install popup — replaces the old permanent Install Game button.
           Waits 10s, skips installed/unsupported browsers and never interrupts a run. */}
       <InstallPopup busy={!!playing || !!modal || !!introLevel || !!purchase || needRefresh} />
-      <aside className="side-info left" aria-hidden="true">
-        <h2>Cartoon Car<br />Adventure</h2>
-        <p>Drive, dodge and collect coins through five Sunny cartoon levels — right in your browser.</p>
-        <ul>
-          <li>◀ ▶ / A D — steer</li>
-          <li>▲ / W — speed up</li>
-          <li>▼ / S — brake</li>
-          <li>P / Esc — pause</li>
-        </ul>
+      <aside className="side-info left" aria-label="Game menu">
+        <img className="side-logo" src="/assets/brand-logo.png" alt="Cartoon Car Adventure" draggable={false} />
+        <div className="side-player">
+          <span className="side-player-avatar">
+            <img src={car.hero} alt="" draggable={false} />
+            <span className="side-player-level">Lv {save.unlockedLevel}</span>
+          </span>
+          <span className="side-player-meta">
+            <span className="side-player-name">Player</span>
+            <span className="side-player-pill">Lv {save.unlockedLevel}</span>
+          </span>
+        </div>
+        <button type="button" className="side-big-btn green" onClick={() => { clickSfx(); setModal('levels') }}>
+          <span className="side-big-ico"><RefMap size={34} /></span>
+          <span className="side-big-text">
+            <span className="side-big-title">All Levels</span>
+            <span className="side-big-sub">Explore all exciting levels</span>
+          </span>
+          <RefChevronRight size={26} className="side-big-chev" />
+        </button>
+        <button type="button" className="side-big-btn purple" onClick={() => { clickSfx(); startRun(null) }}>
+          <span className="side-big-ico"><Flag size={34} /></span>
+          <span className="side-big-text">
+            <span className="side-big-title">Endless</span>
+            <span className="side-big-sub">How far can you go?</span>
+          </span>
+          <RefChevronRight size={26} className="side-big-chev" />
+        </button>
       </aside>
 
       <div className="phone">
@@ -703,43 +733,50 @@ export default function App() {
       </div>
 
       <aside className="side-info right" aria-hidden="true">
-        <h3>How it works</h3>
-        <ul>
-          <li>Finish levels to earn stars &amp; unlock new roads</li>
-          <li>3 crashes ends a run — cones only slow you</li>
-          <li>Boost ×2 / ×3 = bigger rewards, busier roads</li>
-          <li>Progress saves automatically in your browser</li>
-        </ul>
+        <section className="side-card">
+          <h3>
+            <span className="side-hd-ico"><RefLightbulb size={22} /></span> How it works
+          </h3>
+          <ul className="side-keys">
+            <li><span className="key-ico"><RefArrowRight size={22} /></span><b>A / D</b><span>– steer left / right</span></li>
+            <li><span className="key-ico"><RefArrowUp size={22} /></span><b>W</b><span>– speed up</span></li>
+            <li><span className="key-ico"><RefArrowDown size={22} /></span><b>S</b><span>– brake</span></li>
+            <li><span className="key-ico"><RefPause size={20} /></span><b>P / Esc</b><span>– pause</span></li>
+          </ul>
+        </section>
         {tab !== 'trophies' && (
-          <div className="side-missions">
+          <section className="side-card side-missions">
             <h3>
-              <Trophy size={19} /> Your Missions
+              <span className="side-hd-ico"><Trophy size={20} /></span> Your Missions
             </h3>
             <ul className="side-mission-list">
-              {MISSIONS.slice(0, 3).map((m) => {
-                const prog = Math.min(m.target, missionProgress(m, save))
-                const claimed = save.claimedMissions.includes(m.id)
-                const ready = prog >= m.target && !claimed
-                return (
-                  <li key={m.id} className={`side-mission ${ready ? 'ready' : ''} ${claimed ? 'claimed' : ''}`}>
-                    <span className="side-mission-head">
-                      <span className="side-mission-title">{m.description}</span>
-                      <span className="side-mission-count">{fmt(prog)} / {fmt(m.target)}</span>
-                    </span>
-                    <span className="side-mission-track">
-                      <span className="side-mission-fill" style={{ width: `${Math.round((prog / m.target) * 100)}%` }} />
-                    </span>
-                    <span className="side-mission-foot">
-                      <span className="side-mission-state">{claimed ? '✓ Claimed' : ready ? 'Ready to claim!' : ''}</span>
-                      <span className="side-mission-reward">
-                        <Coins size={12} /> +{m.reward}
+              {(['totalCoins', 'levelsCompleted', 'cleanFinishes'] as const)
+                .map((metric) => MISSIONS.find((x) => x.metric === metric))
+                .filter((m): m is (typeof MISSIONS)[number] => m !== undefined)
+                .map((m) => {
+                  const prog = Math.min(m.target, missionProgress(m, save))
+                  const claimed = save.claimedMissions.includes(m.id)
+                  const ready = prog >= m.target && !claimed
+                  return (
+                    <li key={m.id} className={`side-mission ${ready ? 'ready' : ''} ${claimed ? 'claimed' : ''}`}>
+                      <span className={`mi-ico mi-${m.metric}`}>
+                        {m.metric === 'totalCoins' ? <Coins size={24} />
+                          : m.metric === 'levelsCompleted' ? <RefStar size={24} fill="currentColor" />
+                          : <RefNoSymbol size={24} />}
                       </span>
-                    </span>
-                  </li>
-                )
-              })}
+                      <span className="side-mission-title">{m.description}</span>
+                      <span className="side-mission-reward">
+                        <Coins size={15} /> +{m.reward}
+                      </span>
+                      <span className="side-mission-track">
+                        <span className="side-mission-fill" style={{ width: `${Math.round((prog / m.target) * 100)}%` }} />
+                      </span>
+                      <span className="side-mission-count">{fmt(prog)} / {fmt(m.target)}</span>
+                    </li>
+                  )
+                })}
             </ul>
-          </div>
+          </section>
         )}
       </aside>
     </div>
