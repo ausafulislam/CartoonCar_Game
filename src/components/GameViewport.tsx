@@ -168,14 +168,19 @@ export function GameViewport(props: GameViewportProps) {
   const bind = (key: keyof TouchInput) => ({
     onPointerDown: (e: React.PointerEvent) => {
       e.preventDefault()
-      ;(e.target as HTMLElement).setPointerCapture?.(e.pointerId)
+      // No setPointerCapture here — capturing a pointer to a single element
+      // blocks simultaneous touches on other buttons (multi-touch). Each
+      // button independently tracks its own pointer state via inputRef.
       setInput(key, true)
     },
     onPointerUp: (e: React.PointerEvent) => {
       e.preventDefault()
       setInput(key, false)
     },
-    onPointerCancel: () => setInput(key, false),
+    onPointerCancel: (e: React.PointerEvent) => {
+      e.preventDefault()
+      setInput(key, false)
+    },
     onPointerLeave: () => setInput(key, false),
     onContextMenu: (e: React.SyntheticEvent) => e.preventDefault(),
   })
