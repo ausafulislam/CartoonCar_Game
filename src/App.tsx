@@ -440,14 +440,57 @@ export default function App() {
         <UpdatePrompt needRefresh={needRefresh} updateServiceWorker={updateServiceWorker} />
       )}
       <aside className="side-info left" aria-hidden="true">
-        <h2>Cartoon Car<br />Adventure</h2>
-        <p>Drive, dodge and collect coins through five Sunny cartoon levels — right in your browser.</p>
-        <ul>
-          <li>◀ ▶ / A D — steer</li>
-          <li>▲ / W — speed up</li>
-          <li>▼ / S — brake</li>
-          <li>P / Esc — pause</li>
-        </ul>
+        <div className="desktop-left">
+          <h2>Cartoon Car<br />Adventure</h2>
+          <div className="profile-card">
+            <div className="profile-avatar">
+              <img src={car.hero} alt={car.name} className="car-thumb" />
+            </div>
+            <div className="profile-info">
+              <div className="profile-name">{car.name}</div>
+              <div className="profile-level">Level {save.unlockedLevel}</div>
+            </div>
+            <div className="profile-stats">
+              <div className="stat"><Coins size={13} /> {save.coins}</div>
+              <div className="stat"><Heart size={13} /> {save.hearts}</div>
+            </div>
+          </div>
+          <div className="desktop-levels">
+            <h3>Levels</h3>
+            {LEVELS.slice(0, 4).map((l) => {
+              const locked = l.id > save.unlockedLevel
+              const rec = save.records[l.id]
+              return (
+                <div key={l.id} className={`desktop-level-row ${locked ? 'locked' : ''}`}>
+                  <span>Level {l.id}</span>
+                  {locked ? (
+                    <span className="locked-tag">🔒</span>
+                  ) : (
+                    <>
+                      <Stars earned={rec?.stars ?? 0} size={14} />
+                      <button
+                        type="button"
+                        className="shop-btn green"
+                        onClick={() => { clickSfx(); openIntro(l) }}
+                      >
+                        <Play size={14} /> Play
+                      </button>
+                    </>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+          <div className="desktop-modes">
+            <h3>Game Modes</h3>
+            <button type="button" className="big-btn green desktop-mode-btn" onClick={() => { clickSfx(); openIntro(getLevel(currentLevel)) }}>
+              <Play size={16} /> Level {currentLevel}
+            </button>
+            <button type="button" className="big-btn blue desktop-mode-btn" onClick={() => { clickSfx(); startRun(null) }}>
+              <Flag size={16} /> Endless
+            </button>
+          </div>
+        </div>
       </aside>
 
       <div className="phone">
@@ -719,13 +762,52 @@ export default function App() {
       </div>
 
       <aside className="side-info right" aria-hidden="true">
-        <h3>How it works</h3>
-        <ul>
-          <li>Finish levels to earn stars &amp; unlock new roads</li>
-          <li>3 crashes ends a run — cones only slow you</li>
-          <li>Boost ×2 / ×3 = bigger rewards, busier roads</li>
-          <li>Progress saves automatically in your browser</li>
-        </ul>
+        <div className="desktop-right">
+          <h3>Missions</h3>
+          <div className="desktop-missions">
+            {MISSIONS.slice(0, 4).map((m) => {
+              const claimed = save.claimedMissions.includes(m.id)
+              const progress = missionProgress(m, save)
+              const done = progress >= m.target
+              return (
+                <div key={m.id} className={`desktop-mission ${claimed ? 'claimed' : done ? 'ready' : ''}`}>
+                  <span className="mission-text">{m.title}</span>
+                  <div className="mission-bar">
+                    <div
+                      className="mission-fill"
+                      style={{ width: `${Math.min(100, (progress / m.target) * 100)}%` }}
+                    />
+                  </div>
+                  <span className="mission-reward">{claimed ? '✓' : `${m.reward} coins`}</span>
+                </div>
+              )
+            })}
+          </div>
+          <div className="desktop-upgrades">
+            <h3>Upgrades</h3>
+            <div className="upgrade-list">
+              <div className="upgrade-item">
+                <span>Magnet</span>
+                <span>{save.upgrades.magnet ? '✓' : '—'}</span>
+              </div>
+              <div className="upgrade-item">
+                <span>Shield</span>
+                <span>{save.upgrades.shield ? '✓' : '—'}</span>
+              </div>
+              <div className="upgrade-item">
+                <span>Tires</span>
+                <span>{save.upgrades.tires ? '✓' : '—'}</span>
+              </div>
+            </div>
+          </div>
+          <h3>How it works</h3>
+          <ul>
+            <li>Finish levels to earn stars &amp; unlock new roads</li>
+            <li>3 crashes ends a run — cones only slow you</li>
+            <li>Boost ×2 / ×3 = bigger rewards, busier roads</li>
+            <li>Progress saves automatically in your browser</li>
+          </ul>
+        </div>
       </aside>
     </div>
   )
