@@ -1,6 +1,5 @@
-import { useCallback, useEffect, useState } from 'react'
-import { Download, RefreshCw as Refresh, WifiOff } from 'lucide-react'
-import { audio } from '../lib/audio'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { Download, RefreshCw as Refresh, WifiOff, X } from 'lucide-react'
 import { clickSfx } from './ui'
 
 /* ------------------------------------------------------------------ */
@@ -15,7 +14,9 @@ export function captureBeforeInstallPrompt() {
     e.preventDefault()
     deferredPrompt = e
   }
-  window.addEventListener('beforeinstallprompt', handler, { once: true })
+  // Persistent listener: the event can arrive late (after SW registration),
+  // and the automatic popup checks for it during its retry window.
+  window.addEventListener('beforeinstallprompt', handler)
   return () => window.removeEventListener('beforeinstallprompt', handler)
 }
 
@@ -30,70 +31,124 @@ export function isInstalled(): boolean {
   )
 }
 
-export interface InstallButtonProps {
-  onInstalled?: () => void
+/* ------------------------------------------------------------------ */
+/*  Automatic install popup (replaces the old permanent home button)  */
+/* ------------------------------------------------------------------ */
+
+const INSTALL_DISMISSED_KEY = 'cca-install-popup-dismissed'
+
+function wasInstallDismissed(): boolean {
+  try {
+    return sessionStorage.getItem(INSTALL_DISMISSED_KEY) === '1'
+  } catch {
+    return true // storage unavailable — stay quiet rather than nag
+  }
 }
 
-export function InstallButton({ onInstalled }: InstallButtonProps = {}) {
-  const [show, setShow] = useState(false)
-  const [installed, setInstalled] = useState(isInstalled())
-  const [promptAvailable, setPromptAvailable] = useState(false)
+function markInstallDismissed(): void {
+  try {
+    sessionStorage.setItem(INSTALL_DISMISSED_KEY, '1')
+  } catch {
+    /* ignore */
+  }
+}
 
-  useEffect(() => {
-    setInstalled(isInstalled())
-    if (installed) {
-      onInstalled?.()
-      return
-    }
-    const unsubscribe = captureBeforeInstallPrompt()
-    return unsubscribe
-  }, [installed, onInstalled])
+export interface InstallPopupProps {
+  /** True while gameplay or another modal is active — the popup waits instead of interrupting. */
+  busy?: boolean
+}
 
+export function InstallPopup({ busy = false }: InstallPopupProps) {
+  const [visible, setVisible] = useState(false)
+  const [installed, setInstalled] = useState(() => isInstalled())
+  const busyRef = useRef(busy)
+  busyRef.current = busy
+
+  /* Single 10-second timer (no duplicates; cleared on unmount). */
   useEffect(() => {
     if (typeof window === 'undefined') return
-    if (deferredPrompt) {
-      setPromptAvailable(true)
-      return
+    let cancelled = false
+    let timer: number | null = null
+
+    const attempt = (n: number) => {
+      if (cancelled) return
+      if (isInstalled() || wasInstallDismissed()) return
+      if (busyRef.current) {
+        // Never interrupt gameplay or another modal — retry briefly, then give up.
+        if (n < 60) timer = window.setTimeout(() => attempt(n + 1), 2000)
+        return
+      }
+      if (!deferredPrompt) {
+        // Installation unsupported (or event not yet delivered) — never show a dead popup.
+        if (n < 30) timer = window.setTimeout(() => attempt(n + 1), 2000)
+        return
+      }
+      setVisible(true)
     }
-    const handler = (e: Event) => {
-      e.preventDefault()
-      deferredPrompt = e
-      setPromptAvailable(true)
+
+    timer = window.setTimeout(() => attempt(0), 10_000)
+
+    const onInstalled = () => {
+      setInstalled(true)
+      setVisible(false)
     }
-    window.addEventListener('beforeinstallprompt', handler, { once: true })
-    return () => window.removeEventListener('beforeinstallprompt', handler)
+    window.addEventListener('appinstalled', onInstalled)
+    return () => {
+      cancelled = true
+      if (timer !== null) window.clearTimeout(timer)
+      window.removeEventListener('appinstalled', onInstalled)
+    }
+  }, [])
+
+  const dismiss = useCallback(() => {
+    clickSfx()
+    markInstallDismissed()
+    setVisible(false)
   }, [])
 
   const install = useCallback(async () => {
-    if (!deferredPrompt) return
     clickSfx()
+    if (!deferredPrompt) {
+      // Installation became unavailable — close instead of showing a dead button.
+      markInstallDismissed()
+      setVisible(false)
+      return
+    }
     try {
-      await deferredPrompt.prompt()
+      void deferredPrompt.prompt()
       const choice = await deferredPrompt.userChoice
-      if (choice.outcome === 'accepted') {
-        setPromptAvailable(false)
-        setInstalled(true)
-        onInstalled?.()
-      }
+      if (choice?.outcome !== 'accepted') markInstallDismissed()
     } catch {
       /* install dismissed or failed — silently continue */
+    } finally {
+      deferredPrompt = null
+      setVisible(false)
     }
-    deferredPrompt = null
-  }, [onInstalled])
+  }, [])
 
-  if (installed) return null
-  if (!promptAvailable) return null
+  // Derived: never sit on top of gameplay or another modal (waits until free).
+  if (installed || !visible || busy) return null
 
   return (
-    <button
-      type="button"
-      className="install-btn"
-      onClick={install}
-      aria-label="Install Cartoon Car Adventure"
-    >
-      <Download size={17} />
-      <span>Install Game</span>
-    </button>
+    <div className="install-backdrop" role="dialog" aria-modal="true" aria-label="Install Cartoon Car Adventure">
+      <div className="install-popup">
+        <button type="button" className="modal-close" onClick={dismiss} aria-label="Close install prompt">
+          <X size={18} strokeWidth={3.2} />
+        </button>
+        <img className="install-popup-icon" src="/icons/icon-192x192.png" alt="" draggable={false} />
+        <h2>Install Cartoon Car Adventure</h2>
+        <p>Install the game for quick access and an app-like experience.</p>
+        <div className="install-popup-actions">
+          <button type="button" className="big-btn green" onClick={install}>
+            <Download size={19} />
+            Install Now
+          </button>
+          <button type="button" className="big-btn neutral" onClick={dismiss}>
+            Not Now
+          </button>
+        </div>
+      </div>
+    </div>
   )
 }
 

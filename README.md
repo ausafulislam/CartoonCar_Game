@@ -2,7 +2,7 @@
 
 A colorful, family-friendly, mobile-first **cartoon driving game that runs entirely in the browser** — built with **React + TypeScript + Vite** for the menus/UI and **Phaser 3 (Arcade Physics)** for real gameplay. No backend, no installation, no real-money purchases.
 
-![Home screen](docs/screenshots/desktop-home.png)
+![Cartoon Car Adventure key art](docs/screenshots/desktop-home.png)
 
 ## Play it
 
@@ -30,7 +30,8 @@ Near misses give bonus points!
 - **Settings** — music/SFX volume sliders (applied instantly), mute, vibration toggle, how-to-play, confirmed progress reset.
 - **Original synthesized audio** — cheerful music loop, engine hum that follows your speed, coin/crash/shield/win/lose/click sounds via Web Audio (no audio files, no licensing issues). Starts after the first user tap, per browser autoplay rules.
 - **Persistent saves** — everything lives in `localStorage` with validation and safe fallbacks, so refreshes never lose progress.
-- **Responsive portrait design** — 9:16-first, adapts to 9:19.5/9:20 phones, safe-area aware; on desktop the game sits in a centered portrait frame with info panels.
+- **Responsive layouts for every device** — 9:16-first mobile portrait (pixel-identical to the original design), compact heights on mobile landscape (All Levels + Endless as a balanced row), a compact left info rail on tablet portrait, and a three-column landscape layout on laptop/desktop/ultrawide where the game card expands with the window while UI elements stay proportionally sized — never a stretched canvas or an enlarged mobile interface.
+- **Smart PWA install popup** — appears automatically ~10 seconds after load, only in browsers where installation is supported and the app isn't already installed; it never interrupts gameplay or another modal and won't reappear in the same session after dismissal. There is no permanent install button.
 
 ## Run locally
 
@@ -74,7 +75,8 @@ cartoon-car-adventure/
 │   │   └── RacingScene.ts  # Phaser 3 scene: driving, spawning, collisions, particles
 │   ├── components/
 │   │   ├── ui.tsx           # TopHUD, BottomNav, Modal, Stars, stat bars
-│   │   └── GameViewport.tsx # Phaser host, gameplay HUD, touch controls, pause/results
+│   │   ├── GameViewport.tsx # Phaser host, gameplay HUD, touch controls, pause/results
+│   │   └── pwa.tsx          # Automatic install popup, offline & update banners
 │   └── screens/
 │       ├── HomeScreen.tsx
 │       ├── GarageScreen.tsx

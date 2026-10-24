@@ -815,28 +815,8 @@ h1, h2, h3, p { margin-top: 0; }
   background: linear-gradient(180deg, #57b6f2, #7cc24e);
 }
 
-/* ================================ PWA install button ============================== */
-.install-btn {
-  position: relative;
-  z-index: 5;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin: 10px auto 0;
-  padding: 9px 16px;
-  border-radius: 999px;
-  background: linear-gradient(180deg, #ffb03a, #ff7a2f);
-  color: #fff;
-  font-weight: 800;
-  font-size: 14.5px;
-  border: 3px solid #ffffff;
-  box-shadow: 0 5px 0 #c2511f, 0 9px 16px rgba(0, 0, 0, 0.25);
-  cursor: pointer;
-}
-.install-btn:active {
-  transform: translateY(3px);
-  box-shadow: 0 2px 0 #c2511f;
-}
+/* (The permanent Install Game button was removed — installation is now offered
+   by the automatic, timed InstallPopup in components/pwa.tsx.) */
 
 /* ================================ Offline banner ============================== */
 .offline-banner {
@@ -914,32 +894,59 @@ h1, h2, h3, p { margin-top: 0; }
 @media (orientation: landscape) and (min-width: 641px) {
   .phone { width: min(calc(100vw - 28px), 1140px); }
 
-  /* top HUD spreads across the card: profile + coins left, hearts right.
+  /* compact HUD: smaller pills, tighter padding (portrait keeps its look).
      Scoped to .top-hud so the gameplay HUD's coin pill keeps its slim sizing. */
-  .top-hud { padding: clamp(10px, 1.7vh, 16px) clamp(14px, 1.7vw, 22px) 0; gap: clamp(8px, 1vw, 14px); }
-  .top-hud .coin-pill { flex: 0 0 auto; min-width: clamp(170px, 17vw, 250px); }
+  .top-hud { padding: clamp(8px, 1.4vh, 14px) clamp(12px, 1.5vw, 20px) 0; gap: clamp(6px, 0.9vw, 12px); }
+  .top-hud .coin-pill { flex: 0 0 auto; min-width: clamp(140px, 13vw, 200px); }
   .top-hud .heart-pill { margin-left: auto; }
+  .top-hud .profile-chip { width: clamp(46px, 6.4vh, 54px); height: clamp(46px, 6.4vh, 54px); border-radius: 15px; border-width: 2.5px; padding: 3px; }
+  .top-hud .profile-level { font-size: clamp(9.5px, 1.4vh, 11px); }
+  .top-hud .hud-pill { min-height: clamp(36px, 5.4vh, 42px); padding: 3px 5px 3px 4px; gap: 5px; }
+  .top-hud .pill-icon { width: clamp(25px, 3.6vh, 30px); height: clamp(25px, 3.6vh, 30px); }
+  .top-hud .pill-value { font-size: clamp(15px, 2.3vh, 18px); }
+  .top-hud .pill-plus { width: clamp(23px, 3.4vh, 26px); height: clamp(23px, 3.4vh, 26px); }
 
-  /* milestone bar fills the width like the reference; boosts cap and centre */
-  .milestone-card { margin: clamp(10px, 1.8vh, 18px) clamp(14px, 1.7vw, 22px) 0; }
-  .boost-row { width: min(100%, 760px); margin-left: auto; margin-right: auto; }
-  .milestone-bar { height: clamp(30px, 4.4vh, 38px); }
-  .milestone-text { font-size: clamp(14px, 2vh, 17px); }
-  .boost-chip { font-size: clamp(13px, 1.75vh, 15.5px); padding: clamp(5px, 1vh, 8px) 8px; border-radius: 13px; }
-  .boost-note { margin-top: clamp(4px, 0.8vh, 8px); font-size: clamp(12px, 1.65vh, 14.5px); }
+  /* milestone bar + boosts — slimmer so the car stays the focus */
+  .milestone-card { margin: clamp(8px, 1.4vh, 14px) clamp(12px, 1.5vw, 20px) 0; }
+  .milestone-bar { height: clamp(26px, 3.6vh, 31px); }
+  .milestone-text { font-size: clamp(12.5px, 1.75vh, 15px); }
+  .daily-btn, .chest-btn { width: clamp(52px, 4.5vh, 60px); }
+  .boost-row { width: min(100%, 680px); margin-left: auto; margin-right: auto; gap: 5px; }
+  .boost-chip { font-size: clamp(11.5px, 1.5vh, 13.5px); padding: clamp(4px, 0.7vh, 6px) 6px; border-radius: 11px; border-width: 2px; }
+  .boost-note { margin-top: clamp(3px, 0.6vh, 6px); font-size: clamp(11px, 1.45vh, 13px); }
 
   /* car stays large, centered and proportional (height-driven, aspect kept) */
   .hero-area { min-height: 60px; align-items: center; overflow: hidden; padding: 0 12px; }
   .hero-car-btn { height: 100%; width: auto; aspect-ratio: 1.42; max-width: min(58%, 580px); margin: 0 auto; }
   .hero-car { width: 100%; height: 100%; object-fit: contain; object-position: center bottom; }
-  .car-nameplate { font-size: clamp(14px, 2.1vh, 16.5px); margin-top: clamp(2px, 0.5vh, 6px); }
+  .car-nameplate { font-size: clamp(13px, 1.9vh, 15.5px); padding: 3px clamp(12px, 1.5vw, 16px); margin-top: clamp(2px, 0.5vh, 6px); }
 
-  /* main actions scale with available height so nothing clips */
-  .home-actions { padding: clamp(8px, 1.8vh, 14px) clamp(14px, 1.8vw, 24px) clamp(10px, 2vh, 16px); }
-  .level-btn { width: min(460px, 84%); font-size: clamp(25px, 4.6vh, 37px); padding: clamp(9px, 1.6vh, 14px) 24px; }
-  .home-sub-actions { margin-top: clamp(8px, 1.5vh, 13px); gap: clamp(8px, 1vw, 14px); }
-  .sub-action { font-size: clamp(13.5px, 2.1vh, 16.5px); padding: clamp(7px, 1.3vh, 10px) clamp(12px, 1.5vw, 18px); }
-  .install-btn { margin-top: clamp(4px, 0.9vh, 10px); }
+  /* prominent but not oversized actions — width tied to the card, not the viewport */
+  .home-actions { padding: clamp(6px, 1.4vh, 12px) clamp(12px, 1.6vw, 20px) clamp(8px, 1.6vh, 14px); }
+  .level-btn {
+    width: min(360px, 56%);
+    font-size: clamp(21px, 3.6vh, 29px);
+    padding: clamp(7px, 1.3vh, 11px) 18px;
+    border-width: 3px;
+    border-radius: clamp(18px, 2.6vh, 24px);
+    letter-spacing: 1.5px;
+    box-shadow: 0 6px 0 #1d8a12, 0 12px 22px rgba(0, 0, 0, 0.32), inset 0 2px 0 rgba(255, 255, 255, 0.6);
+  }
+  .home-sub-actions { margin-top: clamp(7px, 1.2vh, 11px); gap: clamp(7px, 0.9vw, 12px); }
+  .sub-action {
+    font-size: clamp(12px, 1.75vh, 14.5px);
+    padding: clamp(6px, 1.05vh, 9px) clamp(10px, 1.2vw, 15px);
+    border-width: 2.5px;
+    box-shadow: 0 4px 0 #1553a3, 0 7px 12px rgba(0, 0, 0, 0.22);
+  }
+  .sub-action.endless { box-shadow: 0 4px 0 #5323ad, 0 7px 12px rgba(0, 0, 0, 0.22); }
+  .sub-best { font-size: clamp(11px, 1.5vh, 13px); padding: 2px 8px; }
+
+  /* bottom nav: lighter on wide cards */
+  .bottom-nav { padding: clamp(4px, 0.7vh, 7px) 6px calc(env(safe-area-inset-bottom, 0px) + clamp(4px, 0.7vh, 7px)); border-top-width: 2.5px; }
+  .nav-item { font-size: clamp(10px, 1.45vh, 11.5px); padding: clamp(4px, 0.7vh, 6px) 2px; }
+  .nav-item .nav-icon svg { width: clamp(21px, 3.4vh, 26px); height: clamp(21px, 3.4vh, 26px); }
+  .nav-item.nav-home { margin-top: -16px; border-width: 2.5px; border-radius: 18px; padding-bottom: 6px; }
 }
 
 /* ---- Laptop & desktop (>=1150): three-column reference layout ---------- */
@@ -976,41 +983,42 @@ h1, h2, h3, p { margin-top: 0; }
     column-gap: 8px;
     padding: 0 8px;
   }
-  .top-hud { grid-area: hud; padding: calc(env(safe-area-inset-top, 0px) + 6px) 4px 0; gap: 6px; }
-  .profile-chip { width: 48px; height: 48px; border-radius: 14px; border-width: 2.5px; padding: 3px; }
-  .profile-level { font-size: 10px; bottom: -8px; }
-  .hud-pill { min-height: 38px; padding: 3px 4px 3px 3px; gap: 4px; }
-  .pill-icon { width: 27px; height: 27px; }
-  .pill-icon svg { width: 16px; height: 16px; }
-  .pill-value { font-size: 16px; }
-  .pill-value.small { font-size: 13px; }
-  .pill-sub { font-size: 9.5px; }
-  .pill-plus { width: 24px; height: 24px; }
+  .top-hud { grid-area: hud; padding: calc(env(safe-area-inset-top, 0px) + 5px) 4px 0; gap: 5px; }
+  .profile-chip { width: 44px; height: 44px; border-radius: 13px; border-width: 2.5px; padding: 3px; }
+  .profile-level { font-size: 9.5px; bottom: -8px; }
+  .hud-pill { min-height: 34px; padding: 3px 4px 3px 3px; gap: 4px; }
+  .pill-icon { width: 24px; height: 24px; }
+  .pill-icon svg { width: 15px; height: 15px; }
+  .pill-value { font-size: 15px; }
+  .pill-value.small { font-size: 12.5px; }
+  .pill-sub { font-size: 9px; }
+  .pill-plus { width: 22px; height: 22px; }
 
-  .milestone-card { grid-area: milestone; margin: 6px 0 0; flex-direction: column; gap: 6px; }
-  .daily-btn, .chest-btn { width: 100%; height: 46px; flex-direction: row; gap: 7px; border-radius: 14px; }
-  .milestone-bar { height: 28px; }
-  .milestone-text { font-size: 13.5px; }
-  .boost-row { margin-top: 5px; gap: 5px; }
-  .boost-chip { font-size: 12.5px; padding: 4px 2px; border-radius: 10px; }
-  .boost-note { grid-area: note; margin: 3px 0 6px; font-size: 11px; }
+  .milestone-card { grid-area: milestone; margin: 5px 0 0; flex-direction: column; gap: 5px; }
+  .daily-btn, .chest-btn { width: 100%; height: 42px; flex-direction: row; gap: 7px; border-radius: 13px; }
+  .milestone-bar { height: 25px; }
+  .milestone-text { font-size: 12.5px; }
+  .boost-row { margin-top: 4px; gap: 4px; }
+  .boost-chip { font-size: 11.5px; padding: 3.5px 2px; border-radius: 9px; }
+  .boost-note { grid-area: note; margin: 2px 0 5px; font-size: 10.5px; }
 
   .hero-area { grid-area: hero; min-height: 0; align-items: center; padding: 0 4px; overflow: hidden; }
   .hero-car-btn { height: 100%; width: auto; aspect-ratio: 1.42; max-width: min(96%, 320px); margin: 0 auto; }
-  .car-nameplate { grid-area: plate; justify-self: center; align-self: center; margin: 2px 0 6px; font-size: 13px; padding: 2px 13px; }
+  .car-nameplate { grid-area: plate; justify-self: center; align-self: center; margin: 2px 0 5px; font-size: 12.5px; padding: 2px 12px; }
 
-  .home-actions { grid-area: actions; padding: 4px 0 6px; display: flex; flex-direction: column; justify-content: center; }
-  .level-btn { width: 100%; font-size: clamp(20px, 6.4vh, 26px); padding: clamp(8px, 2.6vh, 11px) 14px; border-width: 3px; border-radius: 18px; }
-  .home-sub-actions { flex-direction: column; gap: 7px; margin-top: 9px; width: 100%; }
-  .sub-action { justify-content: center; font-size: clamp(12.5px, 3.7vh, 14.5px); padding: 7px 10px; }
+  .home-actions { grid-area: actions; padding: 4px 0 5px; display: flex; flex-direction: column; justify-content: center; }
+  .level-btn { width: 100%; font-size: clamp(18px, 5.4vh, 23px); padding: clamp(7px, 2.2vh, 10px) 12px; border-width: 3px; border-radius: 16px; letter-spacing: 1px; box-shadow: 0 5px 0 #1d8a12, 0 10px 16px rgba(0, 0, 0, 0.3), inset 0 2px 0 rgba(255, 255, 255, 0.6); }
+  /* compact balanced row for All Levels / Endless (wraps on very narrow columns) */
+  .home-sub-actions { flex-direction: row; flex-wrap: wrap; gap: 6px; margin-top: 7px; width: 100%; }
+  .sub-action { flex: 1 1 calc(50% - 3px); min-width: 0; justify-content: center; font-size: clamp(11.5px, 3.2vh, 13.5px); padding: 6px 4px; border-width: 2.5px; }
+  .sub-best { font-size: 10.5px; padding: 1px 6px; }
 
-  .bottom-nav { padding: 4px 4px calc(env(safe-area-inset-bottom, 0px) + 4px); border-top-width: 2px; }
-  .nav-item { font-size: 10.5px; padding: 4px 2px; border-radius: 12px; }
-  .nav-item .nav-icon svg { width: 22px; height: 22px; }
-  .nav-item.nav-home { margin-top: -14px; border-width: 2.5px; border-radius: 16px; padding-bottom: 5px; }
+  .bottom-nav { padding: 3px 4px calc(env(safe-area-inset-bottom, 0px) + 3px); border-top-width: 2px; }
+  .nav-item { font-size: 10px; padding: 3px 2px; border-radius: 12px; }
+  .nav-item .nav-icon svg { width: 20px; height: 20px; }
+  .nav-item.nav-home { margin-top: -12px; border-width: 2.5px; border-radius: 15px; padding-bottom: 4px; }
   .nav-badge { top: -6px; right: -11px; }
-  .install-btn { margin: 4px auto 0; padding: 6px 13px; font-size: 13px; border-width: 2.5px; }
-  .toast { bottom: 70px; max-width: 92%; font-size: 13px; }
+  .toast { bottom: 64px; max-width: 92%; font-size: 12.5px; }
 }
 
 /* ---- Micro landscape (very short windows, <=360px tall) ---------------- */
@@ -1064,4 +1072,74 @@ h1, h2, h3, p { margin-top: 0; }
   .game-hud { left: 50%; right: auto; width: var(--play-w); transform: translateX(-50%); }
   .touch-controls { left: 50%; right: auto; width: var(--play-w); transform: translateX(-50%); }
   .keyboard-hint { left: 50%; right: auto; width: var(--play-w); transform: translateX(-50%); }
+}
+
+/* ---- Automatic install popup (replaces the permanent Install Game button) ---- */
+.install-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 95; /* below offline/update banners, above screens/modals */
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(12, 28, 56, 0.38); /* gentle backdrop — keeps context visible */
+  backdrop-filter: blur(2px);
+  animation: fadeIn 0.2s ease;
+}
+.install-popup {
+  position: relative;
+  width: min(370px, 100%);
+  max-height: 88dvh;
+  overflow-y: auto;
+  background: #fff6da;
+  border: 4px solid #ffb03a;
+  border-radius: 24px;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.4);
+  padding: 24px 20px 20px;
+  text-align: center;
+  animation: popIn 0.26s cubic-bezier(0.2, 1.3, 0.4, 1);
+}
+.install-popup .modal-close {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  transform: none;
+}
+.install-popup .modal-close:active {
+  transform: translateY(2px);
+}
+.install-popup-icon {
+  width: 72px;
+  height: 72px;
+  border-radius: 18px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+}
+.install-popup h2 {
+  font-size: clamp(18px, 4.4vw, 21px);
+  color: #7a4a12;
+  margin: 12px 0 8px;
+  line-height: 1.2;
+}
+.install-popup p {
+  font-size: 14px;
+  color: #8a7a5c;
+  line-height: 1.5;
+  margin: 0;
+}
+.install-popup-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  margin-top: 14px;
+}
+.install-popup-actions .big-btn {
+  margin-top: 0;
+}
+@media (max-height: 440px) {
+  .install-popup { padding: 16px 16px 14px; }
+  .install-popup-icon { width: 54px; height: 54px; border-radius: 14px; }
+  .install-popup h2 { margin: 8px 0 6px; }
+  .install-popup p { font-size: 13px; }
+  .install-popup-actions { flex-direction: row; margin-top: 10px; }
+  .install-popup-actions .big-btn { flex: 1; padding-block: 11px; }
 }

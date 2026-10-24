@@ -44,7 +44,7 @@ import {
 import { audio } from './lib/audio'
 import { BottomNav, CoinPrice, Modal, Stars, clickSfx, type Tab } from './components/ui'
 import type { FinishSummary } from './components/GameViewport'
-import { InstallButton, OfflineIndicator, UpdatePrompt, captureBeforeInstallPrompt } from './components/pwa'
+import { InstallPopup, OfflineIndicator, UpdatePrompt, captureBeforeInstallPrompt } from './components/pwa'
 import { useRegisterSW } from 'virtual:pwa-register/react'
 
 // Phaser is the biggest dependency — load it only when a race starts so the
@@ -424,6 +424,9 @@ export default function App() {
       {needRefresh && (
         <UpdatePrompt needRefresh={needRefresh} updateServiceWorker={updateServiceWorker} />
       )}
+      {/* Automatic install popup — replaces the old permanent Install Game button.
+          Waits 10s, skips installed/unsupported browsers and never interrupts a run. */}
+      <InstallPopup busy={!!playing || !!modal || !!introLevel || !!purchase || needRefresh} />
       <aside className="side-info left" aria-hidden="true">
         <h2>Cartoon Car<br />Adventure</h2>
         <p>Drive, dodge and collect coins through five Sunny cartoon levels — right in your browser.</p>
@@ -457,9 +460,7 @@ export default function App() {
           </Suspense>
         ) : (
           <>
-            {tab === 'home' && (
-              <>
-                <HomeScreen
+            {tab === 'home' && <HomeScreen
                   save={save}
                   car={car}
                   currentLevel={currentLevel}
@@ -475,10 +476,8 @@ export default function App() {
                   onOpenGarage={() => setTab('garage')}
                   onCoinsPlus={() => setModal('earn')}
                   onHeartsPlus={() => setModal('hearts')}
-                />
-                <InstallButton />
-              </>
-            )}
+            />
+            }
             {tab === 'garage' && (
               <GarageScreen
                 save={save}
