@@ -1468,3 +1468,21 @@ h1, h2, h3, p { margin-top: 0; }
     grid-template-rows: minmax(0, 1fr);
   }
 }
+
+/* ---- Seamless connected landscape (user request) ---- */
+@media (min-width: 1150px) and (orientation: landscape) {
+  /* no gaps: columns touch each other, the sides, and the bottom nav */
+  .stage { gap: 0; padding: 26px 0 0; }
+  .stage:has(.bottom-nav) { padding-bottom: 0; }
+  .side-info { padding-bottom: calc(var(--ref-nav-h) + 18px); }
+
+  /* center: hide the town image — the unified stage backdrop shows instead */
+  .home-bg { display: none; }
+  .home-screen { background: transparent; }
+  .phone { background: transparent; }
+  .home-actions { padding-bottom: calc(var(--ref-nav-h) + 14px); }
+
+  /* hide scrollbars (scrolling keeps working) */
+  .stage, .stage * { scrollbar-width: none; -ms-overflow-style: none; }
+  .stage *::-webkit-scrollbar { display: none; width: 0; height: 0; }
+}
