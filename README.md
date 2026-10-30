@@ -33,6 +33,12 @@ Near misses give bonus points!
 - **Responsive layouts for every device** — 9:16-first mobile portrait (pixel-identical to the original design), compact heights on mobile landscape (All Levels + Endless as a balanced row), a compact left info rail on tablet portrait, and a three-column landscape layout on laptop/desktop/ultrawide where the game card expands with the window while UI elements stay proportionally sized — never a stretched canvas or an enlarged mobile interface.
 - **Smart PWA install popup** — appears automatically ~10 seconds after load, only in browsers where installation is supported and the app isn't already installed; it never interrupts gameplay or another modal and won't reappear in the same session after dismissal. There is no permanent install button.
 
+### The garage
+
+Twelve cars, from the free starter **Ruby** to the 12,000-coin **Nova** — every one with its own art, stats and top-down sprite detailing:
+
+![Cartoon Car Adventure car lineup](docs/screenshots/cars-lineup.png)
+
 ## Run locally
 
 Requirements: Node.js 18+ (developed on Node 20).
