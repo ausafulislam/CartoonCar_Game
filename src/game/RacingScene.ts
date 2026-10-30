@@ -1,5 +1,6 @@
 import Phaser from 'phaser'
 import type { CarDef, LevelDef, RunResult, ThemeId } from '../lib/gameData'
+import { drawCarTexture, shade } from './carTexture'
 
 export interface TouchInput {
   left: boolean
@@ -50,7 +51,7 @@ const H = 800
 const ROAD_LEFT = 58
 const ROAD_RIGHT = 392
 const LANE_W = (ROAD_RIGHT - ROAD_LEFT) / 4
-const PLAYER_Y = 638
+const PLAYER_Y = 604 // sits clear of the touch control deck
 const MAX_HITS = 3
 
 const laneCenter = (i: number) => ROAD_LEFT + LANE_W * (i + 0.5)
@@ -79,11 +80,6 @@ const TRAFFIC_COLORS: [number, number][] = [
   [0xff5d8f, 0xffffff],
   [0xf5f6fa, 0xdfe6f2],
 ]
-
-function shade(hex: number, amt: number): number {
-  const c = Phaser.Display.Color.IntegerToColor(hex)
-  return amt >= 0 ? c.lighten(amt).color : c.darken(-amt).color
-}
 
 class RacingScene extends Phaser.Scene {
   private opts: RacingOptions
@@ -133,102 +129,12 @@ class RacingScene extends Phaser.Scene {
     key: string,
     body: number,
     roof: number,
-    kind: 'standard' | 'police' | 'taxi' | 'mint' | 'traffic' | 'truck',
+    kind: CarDef['kind'] | 'traffic' | 'truck',
   ): void {
     if (this.textures.exists(key)) return
-    const isTruck = kind === 'truck'
-    const w = 74
-    const h = isTruck ? 148 : 120
     const g = this.add.graphics()
-    const dark = shade(body, -28)
-    const light = shade(body, 22)
-    // shadow
-    g.fillStyle(0x000000, 0.22)
-    g.fillEllipse(w / 2, h / 2 + 5, w - 6, h - 8)
-    // wheels
-    g.fillStyle(0x23262d, 1)
-    const wy2 = h - 42
-    g.fillRoundedRect(1, 20, 11, 26, 4)
-    g.fillRoundedRect(w - 12, 20, 11, 26, 4)
-    g.fillRoundedRect(1, wy2, 11, 26, 4)
-    g.fillRoundedRect(w - 12, wy2, 11, 26, 4)
-    // body
-    g.fillStyle(body, 1)
-    g.fillRoundedRect(8, 3, w - 16, h - 6, 16)
-    g.lineStyle(3, dark, 1)
-    g.strokeRoundedRect(8, 3, w - 16, h - 6, 16)
-    // glossy hood
-    g.fillStyle(light, 0.55)
-    g.fillRoundedRect(14, 8, w - 28, 22, 10)
-    if (isTruck) {
-      g.fillStyle(0xf4f7fb, 1)
-      g.fillRoundedRect(12, 52, w - 24, h - 66, 8)
-      g.lineStyle(2, 0xc7d2e0, 1)
-      g.strokeRoundedRect(12, 52, w - 24, h - 66, 8)
-      g.fillStyle(body, 1)
-      g.fillRoundedRect(18, h / 2 - 6, w - 36, 12, 6)
-    } else {
-      // roof
-      g.fillStyle(roof, 1)
-      g.fillRoundedRect(15, 52, w - 30, 36, 10)
-      g.lineStyle(2, dark, 0.6)
-      g.strokeRoundedRect(15, 52, w - 30, 36, 10)
-      // rear window
-      g.fillStyle(0xbfe9ff, 1)
-      g.fillRoundedRect(16, 92, w - 32, 15, 6)
-    }
-    // windshield
-    g.fillStyle(0xcdefff, 1)
-    g.fillRoundedRect(14, 27, w - 28, 22, 8)
-    g.lineStyle(2, 0x7fb6cf, 1)
-    g.strokeRoundedRect(14, 27, w - 28, 22, 8)
-    if (kind !== 'traffic' && kind !== 'truck') {
-      // cute eyes on the windshield (player cars)
-      g.fillStyle(0xffffff, 1)
-      g.fillCircle(28, 38, 7.5)
-      g.fillCircle(w - 28, 38, 7.5)
-      g.fillStyle(0x26303b, 1)
-      g.fillCircle(28, 36.5, 3.8)
-      g.fillCircle(w - 28, 36.5, 3.8)
-      g.fillStyle(0xffffff, 1)
-      g.fillCircle(29.5, 35, 1.4)
-      g.fillCircle(w - 26.5, 35, 1.4)
-    }
-    // centre stripe
-    if (kind === 'mint' || kind === 'standard') {
-      g.fillStyle(light, 0.8)
-      g.fillRoundedRect(w / 2 - 4, 6, 8, 18, 4)
-    }
-    if (kind === 'police') {
-      g.fillStyle(0x2456e6, 1)
-      g.fillRoundedRect(w / 2 - 17, 64, 16, 11, 4)
-      g.fillStyle(0xffffff, 1)
-      g.fillRoundedRect(w / 2 - 2, 64, 5, 11, 2)
-      g.fillStyle(0xe6352b, 1)
-      g.fillRoundedRect(w / 2 + 2, 64, 16, 11, 4)
-    }
-    if (kind === 'taxi') {
-      const s = 8
-      for (let i = 0; i < 6; i++) {
-        g.fillStyle(i % 2 === 0 ? 0x23262d : 0xffffff, 1)
-        g.fillRect(13 + i * s, 66, s, 9)
-      }
-      g.fillStyle(0x23262d, 1)
-      g.fillRoundedRect(w / 2 - 9, 55, 18, 8, 3)
-      g.fillStyle(0xffc91f, 1)
-      g.fillRoundedRect(w / 2 - 8, 56, 16, 6, 2)
-    }
-    // headlights / taillights
-    g.fillStyle(0xfff2b0, 1)
-    g.fillCircle(17, 10, 5.5)
-    g.fillCircle(w - 17, 10, 5.5)
-    g.fillStyle(0xffffff, 1)
-    g.fillCircle(17, 9, 2.4)
-    g.fillCircle(w - 17, 9, 2.4)
-    g.fillStyle(0xe6352b, 1)
-    g.fillRoundedRect(11, h - 10, 11, 6, 3)
-    g.fillRoundedRect(w - 22, h - 10, 11, 6, 3)
-    g.generateTexture(key, w, h)
+    const { width, height } = drawCarTexture(g, body, roof, kind)
+    g.generateTexture(key, width, height)
     g.destroy()
   }
 

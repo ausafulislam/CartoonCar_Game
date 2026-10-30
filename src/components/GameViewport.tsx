@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
 import {
   ChevronDown,
   ChevronLeft,
@@ -67,10 +67,118 @@ export function GameViewport(props: GameViewportProps) {
   const [result, setResult] = useState<{ raw: RunResult; summary: FinishSummary } | null>(null)
   const [pressed, setPressed] = useState<TouchInput>({ left: false, right: false, up: false, down: false })
 
+  // Every finger that is currently holding a control, keyed by pointer id.
+  // One pointer owns exactly one control at a time, so a finger that slides
+  // from GAS to LEFT hands the control over instead of locking both, and two
+  // fingers on two pads are completely independent (gas + steering).
+  const activePointers = useRef<Map<number, keyof TouchInput>>(new Map())
+
   const setInput = useCallback((key: keyof TouchInput, value: boolean) => {
+    // Mutate the object the racing scene holds a reference to — never replace it.
     inputRef.current[key] = value
     setPressed((p) => (p[key] === value ? p : { ...p, [key]: value }))
   }, [])
+
+  // Haptics fire on the next tick: calling vibrate() synchronously inside
+  // pointerdown interrupts the touch sequence on a few Android builds.
+  const buzz = useCallback((ms: number) => {
+    if (!propsRef.current.vibration || !('vibrate' in navigator)) return
+    setTimeout(() => navigator.vibrate?.(ms), 0)
+  }, [])
+
+  const isHeld = (key: keyof TouchInput) => {
+    for (const held of activePointers.current.values()) if (held === key) return true
+    return false
+  }
+
+  /** Bind a pointer to a control (moving it if that finger already held one). */
+  const pressPointer = useCallback((pointerId: number, key: keyof TouchInput) => {
+    const previous = activePointers.current.get(pointerId)
+    if (previous === key) return
+    const isNewPointer = previous === undefined
+    activePointers.current.set(pointerId, key)
+    if (previous && !isHeld(previous)) setInput(previous, false)
+    setInput(key, true)
+    if (isNewPointer) buzz(8)
+  }, [setInput, buzz])
+
+  /** Drop whatever a pointer was holding (its control stays on if another finger holds it). */
+  const releasePointer = useCallback((pointerId: number) => {
+    const key = activePointers.current.get(pointerId)
+    if (!key) return
+    activePointers.current.delete(pointerId)
+    if (!isHeld(key)) setInput(key, false)
+  }, [setInput])
+
+  /** Let go of every control (pause, results, lost focus, last finger lifted…). */
+  const releaseAll = useCallback(() => {
+    activePointers.current.clear()
+    inputRef.current.left = false
+    inputRef.current.right = false
+    inputRef.current.up = false
+    inputRef.current.down = false
+    setPressed((p) => (p.left || p.right || p.up || p.down
+      ? { left: false, right: false, up: false, down: false }
+      : p))
+  }, [])
+
+  const controlOf = (el: Element | null): keyof TouchInput | null => {
+    const hit = el?.closest('[data-control]')
+    const value = hit?.getAttribute('data-control')
+    return value === 'left' || value === 'right' || value === 'up' || value === 'down' ? value : null
+  }
+
+  /**
+   * Pressing anywhere on the deck starts a control. Deliberately NOT using
+   * setPointerCapture: several mobile browsers mis-handle a second captured
+   * touch pointer, which showed up as "gas works but steering doesn't" (and
+   * vice versa). The deck tracks pointers itself and window-level listeners
+   * below always see the release.
+   */
+  const onDeckPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    const key = controlOf(e.target as Element | null)
+    if (!key) return
+    e.preventDefault()
+    pressPointer(e.pointerId, key)
+  }
+
+  // Any pointer that ends anywhere releases its control; sliding a finger onto
+  // another pad switches controls mid-press; the last finger leaving the screen
+  // clears everything so a control can never stay stuck down.
+  useEffect(() => {
+    const onUp = (e: PointerEvent) => releasePointer(e.pointerId)
+    const onMove = (e: PointerEvent) => {
+      if (!activePointers.current.has(e.pointerId)) return
+      const key = controlOf(document.elementFromPoint(e.clientX, e.clientY))
+      if (key) pressPointer(e.pointerId, key)
+    }
+    const onTouchEnd = (e: TouchEvent) => { if (e.touches.length === 0) releaseAll() }
+    const onVisibility = () => { if (document.hidden) releaseAll() }
+    const stopGesture = (e: Event) => e.preventDefault()
+    window.addEventListener('pointerup', onUp, true)
+    window.addEventListener('pointercancel', onUp, true)
+    window.addEventListener('pointermove', onMove, { capture: true, passive: true })
+    window.addEventListener('blur', releaseAll)
+    document.addEventListener('touchend', onTouchEnd, true)
+    document.addEventListener('touchcancel', onTouchEnd, true)
+    document.addEventListener('visibilitychange', onVisibility)
+    document.addEventListener('gesturestart', stopGesture)
+    return () => {
+      window.removeEventListener('pointerup', onUp, true)
+      window.removeEventListener('pointercancel', onUp, true)
+      window.removeEventListener('pointermove', onMove, true)
+      window.removeEventListener('blur', releaseAll)
+      document.removeEventListener('touchend', onTouchEnd, true)
+      document.removeEventListener('touchcancel', onTouchEnd, true)
+      document.removeEventListener('visibilitychange', onVisibility)
+      document.removeEventListener('gesturestart', stopGesture)
+    }
+  }, [pressPointer, releasePointer, releaseAll])
+
+  // Pausing or finishing a run must drop the throttle immediately.
+  useEffect(() => {
+    if (paused || result) releaseAll()
+  }, [paused, result, releaseAll])
 
   /* ------------------------- Phaser lifecycle ------------------------- */
   useEffect(() => {
@@ -165,26 +273,6 @@ export function GameViewport(props: GameViewportProps) {
     audio.startEngine()
   }
 
-  const bind = (key: keyof TouchInput) => ({
-    onPointerDown: (e: React.PointerEvent) => {
-      e.preventDefault()
-      // No setPointerCapture here — capturing a pointer to a single element
-      // blocks simultaneous touches on other buttons (multi-touch). Each
-      // button independently tracks its own pointer state via inputRef.
-      setInput(key, true)
-    },
-    onPointerUp: (e: React.PointerEvent) => {
-      e.preventDefault()
-      setInput(key, false)
-    },
-    onPointerCancel: (e: React.PointerEvent) => {
-      e.preventDefault()
-      setInput(key, false)
-    },
-    onPointerLeave: () => setInput(key, false),
-    onContextMenu: (e: React.SyntheticEvent) => e.preventDefault(),
-  })
-
   const progressPct = hud.target ? Math.min(100, (hud.distance / hud.target) * 100) : 0
   const healthLeft = hud.maxHits - hud.hits
   const levelName = props.level ? `Level ${props.level.id} · ${props.level.name}` : 'Endless Mode'
@@ -238,30 +326,69 @@ export function GameViewport(props: GameViewportProps) {
         </div>
       </div>
 
-      {/* Touch controls */}
+      {/* Control deck — steering pad, live speed dial and pedals */}
       {!result && (
-        <div className="touch-controls" aria-hidden={false}>
-          <div className="steer-cluster">
-            <button type="button" className={`touch-btn steer ${pressed.left ? 'down' : ''}`} {...bind('left')} aria-label="Steer left">
-              <ChevronLeft size={38} />
+        <div
+          className="control-deck"
+          aria-label="Driving controls"
+          onPointerDown={onDeckPointerDown}
+          onContextMenu={(e) => e.preventDefault()}
+        >
+          <div className="deck-group steer-pad" role="group" aria-label="Steering">
+            <button
+              type="button"
+              className={`pad-btn pad-steer ${pressed.left ? 'is-down' : ''}`}
+              data-control="left"
+              aria-label="Steer left"
+              aria-pressed={pressed.left}
+            >
+              <ChevronLeft size={30} strokeWidth={3.2} />
+              <span className="pad-label">LEFT</span>
             </button>
-            <button type="button" className={`touch-btn steer ${pressed.right ? 'down' : ''}`} {...bind('right')} aria-label="Steer right">
-              <ChevronRight size={38} />
+            <button
+              type="button"
+              className={`pad-btn pad-steer ${pressed.right ? 'is-down' : ''}`}
+              data-control="right"
+              aria-label="Steer right"
+              aria-pressed={pressed.right}
+            >
+              <ChevronRight size={30} strokeWidth={3.2} />
+              <span className="pad-label">RIGHT</span>
             </button>
           </div>
-          <div className="speedo" aria-label={`Speed ${hud.kmh} kilometres per hour`}>
-            <Gauge size={17} />
-            <strong>{hud.kmh}</strong>
-            <span>km/h</span>
+
+          <div className="deck-center">
+            <div
+              className={`speed-dial ${hud.state}`}
+              role="img"
+              aria-label={`Speed ${hud.kmh} kilometres per hour`}
+              style={{ '--speed': `${Math.round(Math.max(0, Math.min(1, hud.speedNorm)) * 100)}%` } as CSSProperties}
+            >
+              <span className="speed-value">{hud.kmh}</span>
+              <span className="speed-unit">km/h</span>
+            </div>
           </div>
-          <div className="pedal-cluster">
-            <button type="button" className={`touch-btn brake ${pressed.down ? 'down' : ''}`} {...bind('down')} aria-label="Brake">
-              <ChevronDown size={22} />
-              <span>BRAKE</span>
+
+          <div className="deck-group pedal-pad" role="group" aria-label="Pedals">
+            <button
+              type="button"
+              className={`pad-btn pad-brake ${pressed.down ? 'is-down' : ''}`}
+              data-control="down"
+              aria-label="Brake"
+              aria-pressed={pressed.down}
+            >
+              <ChevronDown size={20} strokeWidth={3.2} />
+              <span className="pad-label">BRAKE</span>
             </button>
-            <button type="button" className={`touch-btn gas ${pressed.up ? 'down' : ''}`} {...bind('up')} aria-label="Accelerate">
-              <Gauge size={21} />
-              <span>GAS</span>
+            <button
+              type="button"
+              className={`pad-btn pad-gas ${pressed.up ? 'is-down' : ''}`}
+              data-control="up"
+              aria-label="Accelerate"
+              aria-pressed={pressed.up}
+            >
+              <Gauge size={24} strokeWidth={2.6} />
+              <span className="pad-label">GAS</span>
             </button>
           </div>
         </div>

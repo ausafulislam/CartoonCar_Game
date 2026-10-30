@@ -10,7 +10,9 @@ export interface CarDef {
   hero: string // /public path of the 3/4 hero artwork
   body: number // top-down sprite body colour (hex)
   roof: number
-  kind: 'standard' | 'police' | 'taxi' | 'mint'
+  kind:
+    | 'standard' | 'police' | 'taxi' | 'mint'
+    | 'sport' | 'van' | 'electric' | 'beetle' | 'offroad' | 'sedan' | 'racer' | 'super'
   /** Display stats 1-10 (also drive the real params below) */
   speedStat: number
   accelStat: number
@@ -70,6 +72,102 @@ export const CARS: CarDef[] = [
     speedStat: 9, accelStat: 9, handlingStat: 9,
     topSpeed: 1.2, accel: 1.22, handling: 1.28,
   },
+  {
+    id: 'blaze',
+    name: 'Blaze',
+    tagline: 'Orange rocket with white racing stripes and a big spoiler.',
+    price: 2800,
+    hero: '/assets/cars/car-blaze-hero.png',
+    body: 0xf26a0d,
+    roof: 0xfff0d8,
+    kind: 'sport',
+    speedStat: 9, accelStat: 10, handlingStat: 7,
+    topSpeed: 1.26, accel: 1.3, handling: 1.12,
+  },
+  {
+    id: 'coco',
+    name: 'Coco',
+    tagline: 'A happy little camper van. Slow off the line, glued to the road.',
+    price: 3600,
+    hero: '/assets/cars/car-coco-hero.png',
+    body: 0x74cdbc,
+    roof: 0xfdf3dc,
+    kind: 'van',
+    speedStat: 6, accelStat: 6, handlingStat: 10,
+    topSpeed: 1.1, accel: 1.06, handling: 1.46,
+  },
+  {
+    id: 'bolt',
+    name: 'Bolt',
+    tagline: 'Silent electric hatch that zaps away from traffic lights.',
+    price: 4500,
+    hero: '/assets/cars/car-bolt-hero.png',
+    body: 0xa8d94a,
+    roof: 0xe8f6c8,
+    kind: 'electric',
+    speedStat: 9, accelStat: 10, handlingStat: 9,
+    topSpeed: 1.28, accel: 1.34, handling: 1.3,
+  },
+  {
+    id: 'bumble',
+    name: 'Bumble',
+    tagline: 'Buzzing yellow beetle with black stripes and a big heart.',
+    price: 5600,
+    hero: '/assets/cars/car-bumble-hero.png',
+    body: 0xf5c518,
+    roof: 0xf6d84f,
+    kind: 'beetle',
+    speedStat: 9, accelStat: 8, handlingStat: 10,
+    topSpeed: 1.24, accel: 1.26, handling: 1.38,
+  },
+  {
+    id: 'rocky',
+    name: 'Rocky',
+    tagline: 'Chunky off-roader that shrugs off cones like pebbles.',
+    price: 6800,
+    hero: '/assets/cars/car-rocky-hero.png',
+    body: 0x2f9c93,
+    roof: 0xd9c39a,
+    kind: 'offroad',
+    speedStat: 9, accelStat: 8, handlingStat: 10,
+    topSpeed: 1.32, accel: 1.24, handling: 1.42,
+  },
+  {
+    id: 'comet',
+    name: 'Comet',
+    tagline: 'Pearl-white luxury sedan with gold trim and effortless glide.',
+    price: 8000,
+    hero: '/assets/cars/car-comet-hero.png',
+    body: 0xf2e8d8,
+    roof: 0xcdb489,
+    kind: 'sedan',
+    speedStat: 9, accelStat: 9, handlingStat: 9,
+    topSpeed: 1.36, accel: 1.3, handling: 1.34,
+  },
+  {
+    id: 'apex',
+    name: 'Apex',
+    tagline: 'Black track weapon with a huge wing and neon cyan lines.',
+    price: 10000,
+    hero: '/assets/cars/car-apex-hero.png',
+    body: 0x23262d,
+    roof: 0x111318,
+    kind: 'racer',
+    speedStat: 10, accelStat: 10, handlingStat: 9,
+    topSpeed: 1.42, accel: 1.38, handling: 1.3,
+  },
+  {
+    id: 'nova',
+    name: 'Nova',
+    tagline: 'The glowing futuristic champion. Fastest car in the game!',
+    price: 12000,
+    hero: '/assets/cars/car-nova-hero.png',
+    body: 0x9d7bf0,
+    roof: 0x5be0f0,
+    kind: 'super',
+    speedStat: 10, accelStat: 10, handlingStat: 10,
+    topSpeed: 1.48, accel: 1.44, handling: 1.5,
+  },
 ]
 
 export type UpgradeId = 'magnet' | 'shield' | 'tires'
@@ -123,33 +221,109 @@ export interface LevelDef {
   reward: number
 }
 
-export const LEVELS: LevelDef[] = [
-  {
-    id: 1, name: 'Sunny Streets', subtitle: 'A gentle first drive through town',
-    theme: 'sunny', distance: 1200, coinGoal: 8,
-    trafficInterval: 1.9, obstacleInterval: 3.6, trafficSpeed: [110, 150], reward: 60,
-  },
-  {
-    id: 2, name: 'Palm Paradise', subtitle: 'Palm trees, sunshine and busier roads',
-    theme: 'palm', distance: 1600, coinGoal: 12,
-    trafficInterval: 1.55, obstacleInterval: 3.1, trafficSpeed: [120, 165], reward: 90,
-  },
-  {
-    id: 3, name: 'Desert Road', subtitle: 'Mind the cacti on the sandy highway',
-    theme: 'desert', distance: 2000, coinGoal: 15,
-    trafficInterval: 1.3, obstacleInterval: 2.7, trafficSpeed: [130, 180], reward: 130,
-  },
-  {
-    id: 4, name: 'City Rush', subtitle: 'Rush hour! Weave through the traffic',
-    theme: 'city', distance: 2300, coinGoal: 18,
-    trafficInterval: 1.05, obstacleInterval: 2.3, trafficSpeed: [140, 195], reward: 180,
-  },
-  {
-    id: 5, name: 'Golden Highway', subtitle: 'The big sunset finale — good luck!',
-    theme: 'golden', distance: 2600, coinGoal: 24,
-    trafficInterval: 0.9, obstacleInterval: 2.0, trafficSpeed: [150, 210], reward: 260,
-  },
+/* ------------------------------------------------------------------ */
+/*  50 levels — themed runs that get longer, denser and faster.       */
+/*  Blueprints hold the flavour; the numbers scale from the level id  */
+/*  so the whole campaign stays in one place and impossible to drift. */
+/* ------------------------------------------------------------------ */
+
+interface LevelBlueprint {
+  name: string
+  subtitle: string
+  theme: ThemeId
+}
+
+const LEVEL_BLUEPRINTS: LevelBlueprint[] = [
+  { name: 'Sunny Streets', subtitle: 'A gentle first drive through town', theme: 'sunny' },
+  { name: 'Palm Paradise', subtitle: 'Palm trees, sunshine and busier roads', theme: 'palm' },
+  { name: 'Desert Road', subtitle: 'Mind the cacti on the sandy highway', theme: 'desert' },
+  { name: 'City Rush', subtitle: 'Rush hour! Weave through the traffic', theme: 'city' },
+  { name: 'Golden Highway', subtitle: 'Sunset cruising on the golden highway', theme: 'golden' },
+
+  { name: 'Breezy Avenue', subtitle: 'A fresh morning drive past the park', theme: 'sunny' },
+  { name: 'Coconut Coast', subtitle: 'Seaside turns with a salty breeze', theme: 'palm' },
+  { name: 'Dune Dash', subtitle: 'Rolling dunes and quick little detours', theme: 'desert' },
+  { name: 'Downtown Dash', subtitle: 'Shortcuts through the busy centre', theme: 'city' },
+  { name: 'Sunset Strip', subtitle: 'Golden light and heavier traffic', theme: 'golden' },
+
+  { name: 'Meadow Mile', subtitle: 'Green fields, gentle hills, happy engine', theme: 'sunny' },
+  { name: 'Lagoon Loop', subtitle: 'A looping road around the blue lagoon', theme: 'palm' },
+  { name: 'Cactus Canyon', subtitle: 'Cacti on both sides — stay sharp', theme: 'desert' },
+  { name: 'Neon Boulevard', subtitle: 'Bright signs and fast lanes', theme: 'city' },
+  { name: 'Amber Ascent', subtitle: 'Climbing toward the amber sky', theme: 'golden' },
+
+  { name: 'Suburban Sprint', subtitle: 'Quiet streets that get busy fast', theme: 'sunny' },
+  { name: 'Tropical Trail', subtitle: 'Humid air and tight palm corners', theme: 'palm' },
+  { name: 'Dusty Detour', subtitle: 'Sand in the air and rocks on the road', theme: 'desert' },
+  { name: 'Midtown Madness', subtitle: 'Non-stop traffic through midtown', theme: 'city' },
+  { name: 'Honey Horizon', subtitle: 'The horizon glows honey gold', theme: 'golden' },
+
+  { name: 'Picnic Parkway', subtitle: 'Sunday drivers everywhere!', theme: 'sunny' },
+  { name: 'Island Interstate', subtitle: 'A long coastal highway at full tilt', theme: 'palm' },
+  { name: 'Mirage Mile', subtitle: 'Is that a road ahead — or a mirage?', theme: 'desert' },
+  { name: 'Skyline Sprint', subtitle: 'Skyscrapers flash by as you sprint', theme: 'city' },
+  { name: 'Copper Canyon', subtitle: 'Halfway there — copper sunset run', theme: 'golden' },
+
+  { name: 'Garden Grove', subtitle: 'Blossoms, birds and brake lights', theme: 'sunny' },
+  { name: 'Turquoise Turnpike', subtitle: 'Clear water, clear road... mostly', theme: 'palm' },
+  { name: 'Scorpion Stretch', subtitle: 'The desert shows no mercy now', theme: 'desert' },
+  { name: 'Uptown Unwind', subtitle: 'Uptown traffic never truly unwinds', theme: 'city' },
+  { name: 'Golden Gauntlet', subtitle: 'Thirty levels in — bring your best', theme: 'golden' },
+
+  { name: 'Riverside Run', subtitle: 'Follow the river as it winds along', theme: 'sunny' },
+  { name: 'Banyan Boulevard', subtitle: 'Giant trees shade a twisting road', theme: 'palm' },
+  { name: 'Dry Creek Dash', subtitle: 'Dust clouds and sudden rock falls', theme: 'desert' },
+  { name: 'Metropolis Marathon', subtitle: 'A full city circuit without a break', theme: 'city' },
+  { name: 'Sunset Stampede', subtitle: 'Traffic stampedes into the sunset', theme: 'golden' },
+
+  { name: 'Willow Way', subtitle: 'Soft willows, hard corners', theme: 'sunny' },
+  { name: 'Coral Cove', subtitle: 'Coral pink skies over the coast road', theme: 'palm' },
+  { name: 'Rattlesnake Road', subtitle: 'This one really does bite', theme: 'desert' },
+  { name: 'Gridlock Gauntlet', subtitle: 'Every lane is packed — thread it', theme: 'city' },
+  { name: 'Amber Avenue', subtitle: 'The glowing street of amber chance', theme: 'golden' },
+
+  { name: 'Clover Canyon', subtitle: 'Four-leaf luck is your best ally', theme: 'sunny' },
+  { name: 'Sailfin Straight', subtitle: 'A flat-out blast along the shoreline', theme: 'palm' },
+  { name: 'Sandstorm Sprint', subtitle: 'Visibility down — reactions up', theme: 'desert' },
+  { name: 'Skybridge Sprint', subtitle: 'High above the city, no room for error', theme: 'city' },
+  { name: 'Ember Express', subtitle: 'Sparks in the air on the ember road', theme: 'golden' },
+
+  { name: 'Orchard Overpass', subtitle: 'Overpasses loop over the orchards', theme: 'sunny' },
+  { name: 'Palmy Pinnacle', subtitle: 'The hardest palm run in the game', theme: 'palm' },
+  { name: 'Dust Devil Drive', subtitle: 'Whirling sand and no second chances', theme: 'desert' },
+  { name: 'Concrete Canyon', subtitle: 'The final city test before the big one', theme: 'city' },
+  { name: "Champion's Highway", subtitle: 'The legendary last run — go get it!', theme: 'golden' },
 ]
+
+const round2 = (n: number) => Math.round(n * 100) / 100
+
+export const LEVELS: LevelDef[] = LEVEL_BLUEPRINTS.map((bp, index) => {
+  const id = index + 1
+  const step = id - 1
+  const distance = 1200 + step * 120 // 1,200 m → 7,080 m
+  return {
+    id,
+    name: bp.name,
+    subtitle: bp.subtitle,
+    theme: bp.theme,
+    distance,
+    coinGoal: Math.max(8, Math.round(distance / 145)),
+    trafficInterval: round2(Math.max(0.55, 1.9 - step * 0.0275)),
+    obstacleInterval: round2(Math.max(0.8, 3.6 - step * 0.057)),
+    trafficSpeed: [Math.round(110 + step * 2), Math.round(150 + step * 2.6)],
+    reward: Math.round(60 + step * 18),
+  }
+})
+
+export const LEVEL_COUNT = LEVELS.length
+
+/* ------------------------------------------------------------------ */
+/*  Daily missions — three fresh missions every day, reset at         */
+/*  local midnight (same rollover the daily reward uses).             */
+/* ------------------------------------------------------------------ */
+
+export type MissionMetric =
+  | 'coins' | 'levels' | 'clean' | 'distance' | 'runs' | 'bestScore' | 'endlessDist'
 
 export interface MissionDef {
   id: string
@@ -157,20 +331,70 @@ export interface MissionDef {
   description: string
   target: number
   reward: number
-  metric: 'totalCoins' | 'levelsCompleted' | 'cleanFinishes' | 'bestScore' | 'totalDistance' | 'endlessBestDist' | 'ownedCars'
+  metric: MissionMetric
 }
 
-export const MISSIONS: MissionDef[] = [
-  { id: 'coins50', title: 'Coin Starter', description: 'Collect 50 coins in total', target: 50, reward: 50, metric: 'totalCoins' },
-  { id: 'coins300', title: 'Coin Collector', description: 'Collect 300 coins in total', target: 300, reward: 160, metric: 'totalCoins' },
-  { id: 'finish1', title: 'First Finish', description: 'Complete any level', target: 1, reward: 40, metric: 'levelsCompleted' },
-  { id: 'finish5', title: 'Road Regular', description: 'Complete 5 levels (replays count)', target: 5, reward: 140, metric: 'levelsCompleted' },
-  { id: 'clean1', title: 'Careful Driver', description: 'Finish a level with no crashes', target: 1, reward: 120, metric: 'cleanFinishes' },
-  { id: 'score4000', title: 'High Scorer', description: 'Score 4,000 points in a single run', target: 4000, reward: 150, metric: 'bestScore' },
-  { id: 'endless800', title: 'Endless Explorer', description: 'Drive 800 m in one Endless run', target: 800, reward: 120, metric: 'endlessBestDist' },
-  { id: 'distance12000', title: 'Long Hauler', description: 'Drive 12,000 m in total', target: 12000, reward: 220, metric: 'totalDistance' },
-  { id: 'garage2', title: 'Car Collector', description: 'Own 2 different cars', target: 2, reward: 100, metric: 'ownedCars' },
+/** Pool the daily selection is drawn from. Targets are reachable in one day. */
+export const DAILY_MISSION_POOL: MissionDef[] = [
+  { id: 'coins100', title: 'Coin Run', description: 'Collect 100 coins today', target: 100, reward: 80, metric: 'coins' },
+  { id: 'coins250', title: 'Coin Hunter', description: 'Collect 250 coins today', target: 250, reward: 160, metric: 'coins' },
+  { id: 'finish1', title: 'First Finish', description: 'Complete any level today', target: 1, reward: 60, metric: 'levels' },
+  { id: 'finish3', title: 'Road Regular', description: 'Complete 3 levels today (replays count)', target: 3, reward: 150, metric: 'levels' },
+  { id: 'clean1', title: 'Careful Driver', description: 'Finish a level with no crashes today', target: 1, reward: 100, metric: 'clean' },
+  { id: 'clean2', title: 'Spotless', description: 'Finish 2 crash-free levels today', target: 2, reward: 180, metric: 'clean' },
+  { id: 'distance2000', title: 'Day Tripper', description: 'Drive 2,000 m today', target: 2000, reward: 90, metric: 'distance' },
+  { id: 'distance5000', title: 'Long Hauler', description: 'Drive 5,000 m today', target: 5000, reward: 180, metric: 'distance' },
+  { id: 'runs3', title: 'Warm Up', description: 'Start 3 runs today', target: 3, reward: 70, metric: 'runs' },
+  { id: 'runs6', title: 'Petrol Head', description: 'Start 6 runs today', target: 6, reward: 140, metric: 'runs' },
+  { id: 'score3000', title: 'High Scorer', description: 'Score 3,000 points in a single run today', target: 3000, reward: 120, metric: 'bestScore' },
+  { id: 'score6000', title: 'Score Machine', description: 'Score 6,000 points in a single run today', target: 6000, reward: 200, metric: 'bestScore' },
+  { id: 'endless600', title: 'Endless Explorer', description: 'Drive 600 m in one Endless run today', target: 600, reward: 110, metric: 'endlessDist' },
+  { id: 'endless1200', title: 'Endless Legend', description: 'Drive 1,200 m in one Endless run today', target: 1200, reward: 190, metric: 'endlessDist' },
 ]
+
+/** How many missions are offered per day. */
+export const DAILY_MISSION_COUNT = 3
+
+const MISSION_METRICS: MissionMetric[] = ['coins', 'levels', 'clean', 'distance', 'runs', 'bestScore', 'endlessDist']
+
+/** Small deterministic PRNG so the same date always gives the same missions. */
+function seededRandom(seed: number): () => number {
+  let a = seed >>> 0
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0
+    let t = a
+    t = Math.imul(t ^ (t >>> 15), t | 1)
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61)
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+}
+
+function hashString(str: string): number {
+  let h = 2166136261
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i)
+    h = Math.imul(h, 16777619)
+  }
+  return h >>> 0
+}
+
+/**
+ * Today's missions. Deterministic for a given date key (yyyy-mm-dd), so the
+ * list stays identical while the day lasts and changes at midnight.
+ */
+export function missionsForDay(day = todayKey()): MissionDef[] {
+  const rnd = seededRandom(hashString(day))
+  const metrics = [...MISSION_METRICS]
+  // Fisher–Yates with the seeded PRNG
+  for (let i = metrics.length - 1; i > 0; i--) {
+    const j = Math.floor(rnd() * (i + 1))
+    ;[metrics[i], metrics[j]] = [metrics[j], metrics[i]]
+  }
+  return metrics.slice(0, DAILY_MISSION_COUNT).map((metric) => {
+    const options = DAILY_MISSION_POOL.filter((m) => m.metric === metric)
+    return options[Math.floor(rnd() * options.length)]
+  })
+}
 
 export const DAILY_REWARDS = [50, 75, 100, 125, 150, 200, 300]
 
@@ -219,7 +443,20 @@ export interface SaveData {
     totalDistance: number
     runs: number
   }
+  /** Ids claimed from today's mission set (cleared at the daily reset). */
   claimedMissions: string[]
+  /** yyyy-mm-dd the current daily missions + progress belong to. */
+  missionDay: string
+  /** Today's mission progress — zeroed at every daily reset. */
+  dailyStats: {
+    coins: number
+    levels: number
+    clean: number
+    distance: number
+    runs: number
+    bestScore: number
+    endlessDist: number
+  }
   lastDaily: string // yyyy-mm-dd or ''
   dailyStreak: number
   settings: {
@@ -256,6 +493,8 @@ export function defaultSave(): SaveData {
       runs: 0,
     },
     claimedMissions: [],
+    missionDay: todayKey(),
+    dailyStats: { coins: 0, levels: 0, clean: 0, distance: 0, runs: 0, bestScore: 0, endlessDist: 0 },
     lastDaily: '',
     dailyStreak: 0,
     settings: { music: 0.55, sfx: 0.85, muted: false, vibration: true },
@@ -264,6 +503,10 @@ export function defaultSave(): SaveData {
 
 function isNum(v: unknown): v is number {
   return typeof v === 'number' && Number.isFinite(v)
+}
+
+function isDayKey(v: unknown): v is string {
+  return typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v)
 }
 
 /** Load + validate the save. Corrupt/missing data falls back to safe defaults. */
@@ -303,8 +546,20 @@ export function loadSave(): SaveData {
     })
     s.stats = st
     if (!Array.isArray(s.claimedMissions)) s.claimedMissions = []
+    s.claimedMissions = s.claimedMissions.filter((id): id is string => typeof id === 'string')
+    // Saves from before daily missions have no missionDay: treat them as a new
+    // day so the (legacy, now invalid) claim ids are cleared.
+    s.missionDay = isDayKey(parsed.missionDay) ? parsed.missionDay : ''
+    const ds = { ...d.dailyStats, ...(parsed.dailyStats ?? {}) }
+    ;(Object.keys(ds) as (keyof SaveData['dailyStats'])[]).forEach((k) => {
+      if (!isNum(ds[k]) || ds[k] < 0) ds[k] = 0
+      ds[k] = Math.floor(ds[k])
+    })
+    s.dailyStats = ds
     if (typeof s.lastDaily !== 'string') s.lastDaily = ''
     if (!isNum(s.dailyStreak) || s.dailyStreak < 0) s.dailyStreak = 0
+    // New day (or an old save without daily missions): fresh set + zeroed progress
+    rolloverDaily(s)
     const set = { ...d.settings, ...(parsed.settings ?? {}) }
     set.music = isNum(set.music) ? Math.max(0, Math.min(1, set.music)) : d.settings.music
     set.sfx = isNum(set.sfx) ? Math.max(0, Math.min(1, set.sfx)) : d.settings.sfx
@@ -364,9 +619,38 @@ export function getLevel(id: number): LevelDef {
   return LEVELS.find((l) => l.id === id) ?? LEVELS[0]
 }
 
-export function missionProgress(m: MissionDef, save: SaveData): number {
-  if (m.metric === 'ownedCars') return save.ownedCars.length
-  return save.stats[m.metric]
+/**
+ * Reset the daily mission set progress when the local calendar day changes.
+ * Mutates the save and reports whether anything was reset.
+ */
+export function rolloverDaily(save: SaveData, now = Date.now()): boolean {
+  const today = todayKey(new Date(now))
+  if (save.missionDay === today) return false
+  save.missionDay = today
+  save.claimedMissions = []
+  save.dailyStats = { coins: 0, levels: 0, clean: 0, distance: 0, runs: 0, bestScore: 0, endlessDist: 0 }
+  return true
+}
+
+export function dailyMissionProgress(m: MissionDef, save: SaveData): number {
+  return save.dailyStats[m.metric] ?? 0
+}
+
+/** Milliseconds until the daily missions & daily reward reset (local midnight). */
+export function msToDailyReset(now = Date.now()): number {
+  const next = new Date(now)
+  next.setHours(24, 0, 0, 0)
+  return Math.max(0, next.getTime() - now)
+}
+
+/** "5h 12m" / "12m" / "45s" — compact countdown for the reset label. */
+export function formatCountdown(ms: number): string {
+  const total = Math.max(0, Math.ceil(ms / 1000))
+  const h = Math.floor(total / 3600)
+  const m = Math.floor((total % 3600) / 60)
+  if (h > 0) return `${h}h ${String(m).padStart(2, '0')}m`
+  if (m > 0) return `${m}m ${String(total % 60).padStart(2, '0')}s`
+  return `${total}s`
 }
 
 export function totalStars(save: SaveData): number {

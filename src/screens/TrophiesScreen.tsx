@@ -1,21 +1,25 @@
-import { Check, Coins, Home, Star } from 'lucide-react'
+import { Check, Coins, Home, RefreshCw, Star } from 'lucide-react'
 import {
   LEVELS,
-  MISSIONS,
+  dailyMissionProgress,
   fmt,
-  missionProgress,
   totalStars,
+  type MissionDef,
   type SaveData,
 } from '../lib/gameData'
 import { CoinPrice, Stars, clickSfx } from '../components/ui'
 
 interface TrophiesProps {
   save: SaveData
+  /** Today's missions (new set every day at local midnight). */
+  missions: MissionDef[]
+  /** e.g. "5h 12m" until the next daily reset. */
+  resetLabel: string
   onBack: () => void
   onClaimMission: (id: string) => void
 }
 
-export function TrophiesScreen({ save, onBack, onClaimMission }: TrophiesProps) {
+export function TrophiesScreen({ save, missions, resetLabel, onBack, onClaimMission }: TrophiesProps) {
   const stars = totalStars(save)
   return (
     <section className="panel-screen" aria-label="Trophies and missions">
@@ -63,10 +67,13 @@ export function TrophiesScreen({ save, onBack, onClaimMission }: TrophiesProps) 
           })}
         </div>
 
-        <h2 className="section-title">Missions</h2>
+        <h2 className="section-title">Daily missions</h2>
+        <p className="mission-reset">
+          <RefreshCw size={15} /> New set every day · next refresh in {resetLabel}
+        </p>
         <div className="mission-list">
-          {MISSIONS.map((m) => {
-            const progress = Math.min(m.target, missionProgress(m, save))
+          {missions.map((m) => {
+            const progress = Math.min(m.target, dailyMissionProgress(m, save))
             const done = progress >= m.target
             const claimed = save.claimedMissions.includes(m.id)
             return (

@@ -320,30 +320,42 @@ h1, h2, h3, p { margin-top: 0; }
 .bottom-nav {
   position: relative; z-index: 6;
   display: grid; grid-template-columns: repeat(5, 1fr);
-  gap: 2px;
+  gap: 4px;
   background: linear-gradient(180deg, #2f8fe8, #1763c4);
   border-top: 3px solid #8ec9ff;
-  padding: 7px 6px calc(env(safe-area-inset-bottom, 0px) + 7px);
+  padding: 8px 8px calc(env(safe-area-inset-bottom, 0px) + 8px);
   overflow: visible;
+  box-shadow: 0 -6px 18px rgba(6, 30, 60, 0.25);
 }
 .nav-item {
   position: relative;
-  display: flex; flex-direction: column; align-items: center; gap: 1px;
-  color: #cfe6ff; font-size: 11.5px; font-weight: 600;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  min-height: 50px;
+  color: #cbe4ff; font-size: 11.5px; font-weight: 700;
   border-radius: 15px; padding: 6px 2px 5px;
+  touch-action: manipulation; /* instant taps, no double-tap zoom */
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.16s ease, color 0.16s ease, transform 0.12s ease, box-shadow 0.16s ease;
 }
-.nav-item.active { background: rgba(255, 255, 255, 0.22); color: #ffffff; box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.18); }
-.nav-item.nav-home {
-  margin-top: -20px;
-  background: linear-gradient(180deg, #5db2ff, #2f8fe8);
-  border: 3px solid #cfe8ff;
-  border-radius: 20px;
-  color: #d8efff;
-  box-shadow: 0 7px 16px rgba(0, 30, 70, 0.4);
-  padding-bottom: 7px;
+.nav-item:active { transform: translateY(2px) scale(0.97); }
+/* Selected tab: one bright raised pill on a blue bar — impossible to confuse
+   with any other item, and it also wins over the :active press transform. */
+.nav-item.active {
+  color: #0b5fae;
+  background: linear-gradient(180deg, #ffffff, #e2f1ff);
+  box-shadow: 0 4px 0 #0a4c92, 0 8px 15px rgba(0, 25, 60, 0.34);
+  transform: translateY(-2px);
 }
-.nav-item.nav-home.active { background: linear-gradient(180deg, #7cc4ff, #3d9bf5); color: #fff; }
-.nav-icon { position: relative; display: grid; place-items: center; }
+.nav-item.active:active { transform: translateY(1px) scale(0.98); }
+.nav-icon { position: relative; display: grid; place-items: center; transition: transform 0.16s ease; }
+.nav-item.active .nav-icon { transform: translateY(-1px) scale(1.08); }
+.nav-label { line-height: 1.1; }
+.nav-item.active .nav-label { font-weight: 800; }
+@media (hover: hover) and (pointer: fine) {
+  .nav-item:not(.active):hover { background: rgba(255, 255, 255, 0.14); color: #ffffff; }
+}
+@keyframes navBadgePulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.14); } }
+.nav-badge { animation: navBadgePulse 1.6s ease-in-out infinite; }
 .nav-badge {
   position: absolute; top: -7px; right: -13px;
   min-width: 19px; height: 19px; padding: 0 4px;
@@ -556,6 +568,11 @@ h1, h2, h3, p { margin-top: 0; }
 .mission-progress { font-size: 11.5px; font-weight: 700; color: #6b5a44; }
 .mission-done { display: inline-flex; align-items: center; gap: 4px; color: #1d8a12; font-weight: 700; }
 .mission-reward { font-size: 12px; color: #8a7a5c; font-weight: 600; text-align: right; }
+.mission-reset {
+  display: flex; align-items: center; gap: 6px;
+  margin: -4px 2px 10px; font-size: 12.5px; font-weight: 700;
+  color: #eaf6ff; text-shadow: 0 1px 0 rgba(0, 60, 120, 0.55);
+}
 
 /* Settings */
 .settings-card h2 { margin: 0 0 10px; font-size: 19px; color: #7a4a12; }
@@ -634,6 +651,7 @@ h1, h2, h3, p { margin-top: 0; }
 .objective-box p { display: flex; align-items: center; gap: 8px; margin: 6px 0; font-size: 14.5px; color: #6b4e22; }
 .intro-best { font-weight: 700; color: #c2511f !important; }
 .level-btn.intro-play { margin-top: 13px; font-size: 26px; width: min(260px, 88%); }
+.level-list-note { margin: 0 0 10px; font-size: 12.5px; font-weight: 700; color: #8a7a5c; }
 .level-list { display: flex; flex-direction: column; gap: 9px; }
 .level-row {
   display: flex; align-items: center; gap: 9px;
@@ -729,46 +747,125 @@ h1, h2, h3, p { margin-top: 0; }
   border-radius: 999px; padding: 4px 12px;
   backdrop-filter: blur(3px);
 }
-.touch-controls {
-  position: absolute; left: 10px; right: 10px; z-index: 10;
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 14px);
-  display: flex; justify-content: space-between; align-items: flex-end; gap: 8px;
-  pointer-events: none;
-}
-.steer-cluster, .pedal-cluster { display: flex; gap: 10px; pointer-events: auto; }
-.touch-btn {
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
-  color: #ffffff; font-weight: 800; font-size: 13px; letter-spacing: 0.6px;
-  border: 3px solid rgba(255, 255, 255, 0.92);
-  border-radius: 21px;
-  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.3);
+/* ============================ Control deck ============================= */
+/* A dedicated bottom band: steering pad on the left thumb, pedals on the
+   right thumb and a live speed dial in the middle. The band fades into the
+   road so it never hides the car, and its empty centre lets the scene show
+   through. Buttons sit above the iOS/Android safe area. */
+.control-deck {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 10;
+  display: flex; align-items: flex-end; justify-content: space-between; gap: clamp(4px, 2vw, 10px);
+  /* The side inset keeps the pads out of the OS back-swipe / edge-gesture
+     zones (they can cancel a press mid-hold); it grows to 18px on wider
+     screens and shrinks back to 12px on very narrow ones so nothing clips. */
+  padding:
+    clamp(16px, 5.5vw, 34px) max(clamp(12px, 4vw, 18px), env(safe-area-inset-right, 0px)) calc(env(safe-area-inset-bottom, 0px) + 12px) max(clamp(12px, 4vw, 18px), env(safe-area-inset-left, 0px));
+  background: linear-gradient(
+    to top,
+    rgba(8, 22, 42, 0.68) 0%,
+    rgba(8, 22, 42, 0.36) 46%,
+    rgba(8, 22, 42, 0) 100%
+  );
+  /* The whole band absorbs touches: a second finger landing between the pads
+     can never reach the canvas or start a browser gesture mid-press. */
+  pointer-events: auto;
+  user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
   touch-action: none;
-  user-select: none; -webkit-user-select: none;
+  overscroll-behavior: contain;
 }
-.touch-btn.steer { width: 68px; height: 68px; background: rgba(31, 111, 214, 0.85); box-shadow: 0 6px 0 rgba(16, 62, 120, 0.8); }
-.touch-btn.gas { width: 74px; height: 86px; background: rgba(44, 184, 26, 0.88); box-shadow: 0 6px 0 rgba(20, 110, 10, 0.8); }
-.touch-btn.brake { width: 74px; height: 86px; background: rgba(224, 42, 42, 0.88); box-shadow: 0 6px 0 rgba(140, 16, 16, 0.8); }
-.touch-btn.down { transform: translateY(4px) scale(0.96); filter: brightness(1.22); box-shadow: 0 2px 0 rgba(0, 0, 0, 0.4); }
-.speedo {
-  display: flex; flex-direction: column; align-items: center;
-  background: rgba(18, 42, 74, 0.62);
-  border: 2px solid rgba(255, 255, 255, 0.5);
-  color: #fff; border-radius: 15px; padding: 5px 12px 6px;
+.deck-group { display: flex; align-items: flex-end; gap: clamp(5px, 2vw, 10px); }
+.deck-center { flex: 1 1 auto; display: flex; justify-content: center; align-items: flex-end; padding-bottom: 6px; }
+
+.pad-btn {
+  position: relative;
+  pointer-events: auto;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  color: #ffffff; font-weight: 800;
+  border: 3px solid rgba(255, 255, 255, 0.92);
+  border-radius: 22px;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.07s ease, box-shadow 0.07s ease, filter 0.07s ease;
+}
+.pad-label { font-size: clamp(8.5px, 2.4vw, 10px); font-weight: 800; letter-spacing: 0.9px; opacity: 0.94; }
+.pad-steer {
+  width: clamp(48px, 15.5vw, 72px); height: clamp(48px, 15.5vw, 72px);
+  background: linear-gradient(180deg, rgba(70, 154, 248, 0.96), rgba(26, 100, 202, 0.96));
+  box-shadow: 0 5px 0 rgba(13, 57, 115, 0.92), inset 0 2px 0 rgba(255, 255, 255, 0.3);
+}
+.pad-steer:first-child { border-bottom-left-radius: 28px; }
+.pad-steer:last-child { border-bottom-right-radius: 28px; }
+.pad-brake {
+  width: clamp(50px, 17vw, 74px); height: clamp(58px, 20vw, 84px);
+  background: linear-gradient(180deg, rgba(250, 96, 96, 0.96), rgba(206, 30, 30, 0.96));
+  box-shadow: 0 6px 0 rgba(124, 13, 13, 0.92), inset 0 2px 0 rgba(255, 255, 255, 0.26);
+}
+.pad-gas {
+  width: clamp(58px, 19.5vw, 84px); height: clamp(70px, 23vw, 96px); border-radius: 26px;
+  background: linear-gradient(180deg, rgba(96, 226, 92, 0.97), rgba(30, 176, 24, 0.97));
+  box-shadow: 0 6px 0 rgba(17, 100, 12, 0.92), inset 0 2px 0 rgba(255, 255, 255, 0.3);
+}
+.pad-btn.is-down {
+  transform: translateY(4px) scale(0.955);
+  filter: brightness(1.18) saturate(1.08);
+  box-shadow:
+    0 2px 0 rgba(0, 0, 0, 0.45),
+    inset 0 4px 12px rgba(0, 0, 0, 0.32),
+    0 0 0 4px rgba(255, 255, 255, 0.38);
+}
+.pad-btn:focus-visible { outline: 3px solid #ffe98a; outline-offset: 3px; }
+
+.speed-dial {
+  --speed: 0%;
+  width: clamp(46px, 15vw, 70px); height: clamp(46px, 15vw, 70px); border-radius: 50%;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(11, 29, 52, 0.94) 60%, transparent 61%),
+    conic-gradient(#5be0f0 var(--speed), rgba(255, 255, 255, 0.22) 0);
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35);
+  color: #ffffff;
   pointer-events: none;
 }
-.speedo strong { font-size: 23px; line-height: 1; }
-.speedo span { font-size: 10.5px; font-weight: 700; opacity: 0.85; }
+.speed-value { font-size: clamp(16px, 5vw, 22px); font-weight: 800; line-height: 1; letter-spacing: -0.5px; }
+.speed-unit { font-size: clamp(7.5px, 2.1vw, 9px); font-weight: 700; letter-spacing: 0.6px; opacity: 0.82; }
+
 .keyboard-hint { display: none; }
 @media (hover: hover) and (pointer: fine) {
   .keyboard-hint {
     display: block;
-    position: absolute; left: 0; right: 0; bottom: 116px; z-index: 9;
-    text-align: center; margin: 0;
-    color: rgba(255, 255, 255, 0.82); font-size: 12px; font-weight: 600;
-    text-shadow: 0 1px 4px rgba(0, 30, 60, 0.8);
+    position: absolute; right: max(14px, env(safe-area-inset-right, 0px)); left: auto;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 150px); z-index: 9;
+    margin: 0; padding: 3px 12px 4px; white-space: nowrap;
+    border-radius: 999px;
+    background: rgba(12, 32, 56, 0.42);
+    backdrop-filter: blur(3px);
+    color: rgba(255, 255, 255, 0.92); font-size: 12px; font-weight: 600;
+    text-shadow: 0 1px 3px rgba(0, 20, 40, 0.7);
     pointer-events: none;
   }
 }
+
+/* Short screens (landscape phones, small windows): compact deck */
+@media (max-height: 560px) {
+  .control-deck {
+    padding-top: 18px;
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 8px);
+  }
+  .deck-group { gap: 8px; }
+  .pad-steer { width: 58px; height: 58px; border-radius: 18px; }
+  .pad-steer:first-child { border-bottom-left-radius: 22px; }
+  .pad-steer:last-child { border-bottom-right-radius: 22px; }
+  .pad-brake { width: 62px; height: 68px; border-radius: 18px; }
+  .pad-gas { width: 70px; height: 78px; border-radius: 20px; }
+  .pad-label { font-size: 9px; }
+  .speed-dial { width: 58px; height: 58px; }
+  .speed-value { font-size: 18px; }
+  .speed-unit { font-size: 8px; }
+  .keyboard-hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 104px); font-size: 11px; padding: 2px 9px 3px; }
+}
+
 .game-overlay {
   position: absolute; inset: 0; z-index: 30;
   background: rgba(18, 32, 62, 0.52);
@@ -946,7 +1043,6 @@ h1, h2, h3, p { margin-top: 0; }
   .bottom-nav { padding: clamp(4px, 0.7vh, 7px) 6px calc(env(safe-area-inset-bottom, 0px) + clamp(4px, 0.7vh, 7px)); border-top-width: 2.5px; }
   .nav-item { font-size: clamp(10px, 1.45vh, 11.5px); padding: clamp(4px, 0.7vh, 6px) 2px; }
   .nav-item .nav-icon svg { width: clamp(21px, 3.4vh, 26px); height: clamp(21px, 3.4vh, 26px); }
-  .nav-item.nav-home { margin-top: -16px; border-width: 2.5px; border-radius: 18px; padding-bottom: 6px; }
 }
 
 /* ---- Laptop & desktop (>=1150): three-column reference layout ---------- */
@@ -1014,9 +1110,8 @@ h1, h2, h3, p { margin-top: 0; }
   .sub-best { font-size: 10.5px; padding: 1px 6px; }
 
   .bottom-nav { padding: 3px 4px calc(env(safe-area-inset-bottom, 0px) + 3px); border-top-width: 2px; }
-  .nav-item { font-size: 10px; padding: 3px 2px; border-radius: 12px; }
+  .nav-item { font-size: 10px; padding: 3px 2px; border-radius: 12px; min-height: 44px; }
   .nav-item .nav-icon svg { width: 20px; height: 20px; }
-  .nav-item.nav-home { margin-top: -12px; border-width: 2.5px; border-radius: 15px; padding-bottom: 4px; }
   .nav-badge { top: -6px; right: -11px; }
   .toast { bottom: 64px; max-width: 92%; font-size: 12.5px; }
 }
@@ -1070,8 +1165,12 @@ h1, h2, h3, p { margin-top: 0; }
   .game-viewport { container-type: size; --play-w: max(340px, min(100cqw, 56.25cqh)); }
   .phaser-parent { left: 50%; right: auto; width: var(--play-w); transform: translateX(-50%); }
   .game-hud { left: 50%; right: auto; width: var(--play-w); transform: translateX(-50%); }
-  .touch-controls { left: 50%; right: auto; width: var(--play-w); transform: translateX(-50%); }
-  .keyboard-hint { left: 50%; right: auto; width: var(--play-w); transform: translateX(-50%); }
+  /* keep the thumbs just outside the play column when the screen is wider */
+  .control-deck {
+    padding-left: max(18px, calc((100cqw - var(--play-w)) / 2 - 88px));
+    padding-right: max(18px, calc((100cqw - var(--play-w)) / 2 - 88px));
+  }
+  .keyboard-hint { max-width: calc(var(--play-w) - 8px); overflow: hidden; text-overflow: ellipsis; }
 }
 
 /* ---- Automatic install popup (replaces the permanent Install Game button) ---- */
@@ -1249,13 +1348,28 @@ h1, h2, h3, p { margin-top: 0; }
 }
 .mi-ico.mi-totalCoins { background: radial-gradient(circle at 35% 30%, #ffe9a0, #ffc42e 62%, #f0a61c); border: 3px solid #e09b1c; color: #7a4e00; }
 .mi-ico.mi-levelsCompleted { background: radial-gradient(circle at 35% 30%, #6fc5ff, #2e9bf5 65%, #1672dd); border: 3px solid #0f5fbe; color: #ffd24a; }
-.mi-ico.mi-cleanFinishes { background: #ffffff; border: 3px solid #e23b3b; color: #e23b3b; }
+.mi-ico.mi-clean { background: #ffffff; border: 3px solid #e23b3b; color: #e23b3b; }
+.mi-ico.mi-coins { background: radial-gradient(circle at 35% 30%, #ffe9a0, #ffc42e 62%, #f0a61c); border: 3px solid #e09b1c; color: #7a4e00; }
+.mi-ico.mi-levels { background: radial-gradient(circle at 35% 30%, #6fc5ff, #2e9bf5 65%, #1672dd); border: 3px solid #0f5fbe; color: #ffd24a; }
+.mi-ico.mi-distance { background: radial-gradient(circle at 35% 30%, #b6f08a, #5ecb3c 65%, #3aa521); border: 3px solid #2c8816; color: #ffffff; }
+.mi-ico.mi-runs { background: radial-gradient(circle at 35% 30%, #d5b6ff, #9b6bff 65%, #7a45e0); border: 3px solid #5f2ebf; color: #ffffff; }
+.mi-ico.mi-bestScore { background: radial-gradient(circle at 35% 30%, #ffd9a0, #ff9f1c 65%, #e07f00); border: 3px solid #bf6600; color: #ffffff; }
+.mi-ico.mi-endlessDist { background: radial-gradient(circle at 35% 30%, #ffb3c7, #ff5d8f 65%, #e03a72); border: 3px solid #bf2a5d; color: #ffffff; }
 .side-mission .side-mission-title { grid-area: title; align-self: end; font-size: 15.5px; font-weight: 700; color: #fff; }
 .side-mission .side-mission-reward { grid-area: reward; justify-self: end; align-self: end; color: #fff; font-size: 16px; font-weight: 800; display: inline-flex; align-items: center; gap: 4px; margin: 0; }
 .side-mission .side-mission-reward svg { color: #ffc42e; }
 .side-mission .side-mission-track { grid-area: bar; height: 14px; }
 .side-mission .side-mission-count { grid-area: count; justify-self: end; align-self: start; font-size: 15px; font-weight: 700; color: #eaf4ff; }
-.side-mission:has(.mi-levelsCompleted) .side-mission-fill { background: linear-gradient(90deg, #7dd3fc, #2e9bf5); }
+.side-mission:has(.mi-levels) .side-mission-fill { background: linear-gradient(90deg, #7dd3fc, #2e9bf5); }
+.side-mission:has(.mi-clean) .side-mission-fill { background: linear-gradient(90deg, #ffffff, #ffd5d5); }
+.side-mission:has(.mi-runs) .side-mission-fill { background: linear-gradient(90deg, #d5b6ff, #9b6bff); }
+.side-mission:has(.mi-bestScore) .side-mission-fill { background: linear-gradient(90deg, #ffd98f, #ff9f1c); }
+.side-mission:has(.mi-endlessDist) .side-mission-fill { background: linear-gradient(90deg, #ffb3c7, #ff5d8f); }
+.side-missions h3 { flex-wrap: wrap; row-gap: 4px; }
+.side-mission-reset {
+  margin-left: auto; font-size: 12px; font-weight: 700;
+  color: #cfe6ff; letter-spacing: 0.2px; white-space: nowrap;
+}
 
 /* ============ Reference landscape GUI (laptop/desktop >=1150) ============ */
 @media (min-width: 1150px) and (orientation: landscape) {
@@ -1426,22 +1540,17 @@ h1, h2, h3, p { margin-top: 0; }
   }
   .nav-item .nav-icon svg { width: clamp(26px, 3.6vh, 34px); height: clamp(26px, 3.6vh, 34px); }
   .nav-item.active {
-    background: linear-gradient(180deg, #4aa5fd, #2e94fb);
-    border-color: rgba(255, 255, 255, 0.55);
-    color: #ffffff;
-    box-shadow: 0 6px 14px rgba(0, 30, 70, 0.35);
+    background: linear-gradient(180deg, #ffffff, #e2f1ff);
+    border-color: #ffffff;
+    color: #0b5fae;
+    box-shadow: 0 5px 0 #0a4c92, 0 10px 18px rgba(0, 20, 55, 0.4);
   }
-  .nav-item.nav-home {
-    margin-top: 4px; margin-bottom: clamp(8px, 1.7vh, 16px);
-    background: linear-gradient(180deg, #4aa5fd, #2e94fb);
-    border: 2px solid rgba(255, 255, 255, 0.55);
-    border-radius: 16px;
-    color: #ffffff;
-    box-shadow: 0 6px 14px rgba(0, 30, 70, 0.35);
-    padding-bottom: clamp(6px, 1vh, 10px);
-  }
-  .nav-item.nav-home.active { background: linear-gradient(180deg, #57abff, #3599fb); }
   .toast { bottom: calc(var(--ref-nav-h) + 14px); }
+}
+
+/* The reference desktop layout lists the keys in the side panel already. */
+@media (hover: hover) and (pointer: fine) and (min-width: 1150px) and (orientation: landscape) {
+  .keyboard-hint { display: none; }
 }
 
 /* ---- Reference fine-tuning ---- */
@@ -1494,5 +1603,28 @@ h1, h2, h3, p { margin-top: 0; }
       linear-gradient(180deg, rgba(1, 40, 96, 0) 74%, rgba(1, 40, 96, 0.42) 100%),
       url('/assets/environments/landscape-bg.png') center / cover no-repeat,
       #4fb0f5;
+  }
+}
+
+/* ---- Desktop mission rail: give long mission text room to breathe ------- */
+@media (min-width: 1150px) and (orientation: landscape) {
+  .side-mission {
+    grid-template-columns: 46px minmax(0, 1fr);
+    grid-template-areas: "ico title" "ico bar" "ico foot";
+    gap: 4px 10px;
+  }
+  .side-mission .mi-ico { grid-area: ico; width: 46px; height: 46px; }
+  .side-mission .side-mission-title {
+    grid-area: title; align-self: center;
+    font-size: 15px; line-height: 1.28;
+  }
+  .side-mission .side-mission-track { grid-area: bar; height: 12px; }
+  .side-mission .side-mission-count {
+    grid-area: foot; justify-self: start; align-self: center;
+    font-size: 13.5px; color: #dbeaff;
+  }
+  .side-mission .side-mission-reward {
+    grid-area: foot; justify-self: end; align-self: center;
+    font-size: 15px; margin: 0;
   }
 }
