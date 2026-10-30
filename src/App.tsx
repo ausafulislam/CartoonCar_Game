@@ -21,22 +21,26 @@ import {
   MAX_HEARTS,
   MILESTONE_EVERY,
   MILESTONE_REWARD,
-  MISSIONS,
   applyHeartRegen,
   canClaimDaily,
   clearSave,
+  dailyMissionProgress,
   defaultSave,
   fmt,
+  formatCountdown,
   getCar,
   getLevel,
   loadSave,
-  missionProgress,
+  missionsForDay,
+  msToDailyReset,
   msToNextHeart,
   persistSave,
+  rolloverDaily,
   starsForRun,
   todayKey,
   type CarDef,
   type LevelDef,
+  type MissionMetric,
   type RunResult,
   type SaveData,
   type UpgradeDef,
@@ -76,11 +80,67 @@ function cloneSave(s: SaveData): SaveData {
   return JSON.parse(JSON.stringify(s)) as SaveData
 }
 
+function LevelList({ save, onOpenLevel }: { save: SaveData; onOpenLevel: (l: LevelDef) => void }) {
+  const activeRef = useRef<HTMLDivElement | null>(null)
+  // 50 levels is a long list — start scrolled to where the player actually is.
+  useEffect(() => {
+    activeRef.current?.scrollIntoView({ block: 'center' })
+  }, [])
+  return (
+    <>
+      <p className="modal-text center level-list-note">
+        {save.unlockedLevel} of {LEVELS.length} levels unlocked · {Object.keys(save.records).length} finished
+      </p>
+      <div className="level-list">
+        {LEVELS.map((l) => {
+          const locked = l.id > save.unlockedLevel
+          const rec = save.records[l.id]
+          return (
+            <div
+              key={l.id}
+              ref={l.id === save.unlockedLevel ? activeRef : undefined}
+              className={`level-row ${locked ? 'locked' : ''}`}
+            >
+              <div className="level-row-info">
+                <strong>Level {l.id} — {l.name}</strong>
+                <span>{fmt(l.distance)} m · {l.coinGoal} coins · reward {l.reward}</span>
+                {rec && <span>Best score {fmt(rec.bestScore)}</span>}
+              </div>
+              {locked ? (
+                <span className="locked-tag"><Lock size={15} /> Finish level {l.id - 1}</span>
+              ) : (
+                <>
+                  <Stars earned={rec?.stars ?? 0} size={17} />
+                  <button type="button" className="shop-btn green" onClick={() => { clickSfx(); onOpenLevel(l) }}>
+                    <Play size={15} /> Play
+                  </button>
+                </>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </>
+  )
+}
+
 function mmss(ms: number): string {
   const total = Math.ceil(ms / 1000)
   const m = Math.floor(total / 60)
   const s = total % 60
   return `${m}:${String(s).padStart(2, '0')}`
+}
+
+function MissionIcon({ metric, size = 24 }: { metric: MissionMetric; size?: number }) {
+  switch (metric) {
+    case 'coins': return <Coins size={size} />
+    case 'levels': return <RefStar size={size} fill="currentColor" />
+    case 'clean': return <RefNoSymbol size={size} />
+    case 'distance': return <RefMap size={size} />
+    case 'runs': return <Play size={size} fill="currentColor" />
+    case 'bestScore': return <Trophy size={size} />
+    case 'endlessDist': return <Flag size={size} />
+  }
 }
 
 export default function App() {
@@ -171,6 +231,28 @@ export default function App() {
     return () => window.clearInterval(id)
   }, [commit])
 
+  /* --------------------- daily mission rollover --------------------- */
+  // Missions (and their progress) reset every local midnight, just like the
+  // daily reward. Check while the app is open too, in case it stays open late.
+  useEffect(() => {
+    const checkDay = () => {
+      const draft = cloneSave(saveRef.current)
+      if (rolloverDaily(draft)) {
+        commit(draft)
+        notify('New daily missions are ready!')
+      }
+    }
+    const id = window.setInterval(checkDay, 30_000)
+    const onVisible = () => { if (!document.hidden) checkDay() }
+    document.addEventListener('visibilitychange', onVisible)
+    window.addEventListener('focus', onVisible)
+    return () => {
+      window.clearInterval(id)
+      document.removeEventListener('visibilitychange', onVisible)
+      window.removeEventListener('focus', onVisible)
+    }
+  }, [commit, notify])
+
   /* -------------------------- coin pulse -------------------------- */
   useEffect(() => {
     if (save.coins > prevCoins.current) {
@@ -194,18 +276,22 @@ export default function App() {
     return mmss(msToNextHeart(save, nowTick))
   }, [save, nowTick])
 
+  // Today's three missions — stable for the whole day, new ones at midnight.
+  const missions = useMemo(() => missionsForDay(save.missionDay || todayKey()), [save.missionDay])
+  const dailyResetLabel = useMemo(() => formatCountdown(msToDailyReset(nowTick)), [nowTick])
   const claimableMissions = useMemo(
     () =>
-      MISSIONS.filter(
-        (m) => !save.claimedMissions.includes(m.id) && missionProgress(m, save) >= m.target,
+      missions.filter(
+        (m) => !save.claimedMissions.includes(m.id) && dailyMissionProgress(m, save) >= m.target,
       ).length,
-    [save],
+    [missions, save],
   )
 
   /* ----------------------------- hearts ----------------------------- */
   /** Charge one heart for a run. Returns false when out of hearts. */
   const chargeHeart = useCallback((): boolean => {
     const cur = cloneSave(saveRef.current)
+    rolloverDaily(cur)
     applyHeartRegen(cur)
     if (cur.hearts < 1) {
       commit(cur)
@@ -217,6 +303,7 @@ export default function App() {
     if (cur.hearts >= MAX_HEARTS) cur.heartsUpdatedAt = Date.now()
     cur.hearts -= 1
     cur.stats.runs += 1
+    cur.dailyStats.runs += 1
     commit(cur)
     return true
   }, [commit, notify])
@@ -235,10 +322,18 @@ export default function App() {
   const handleFinish = useCallback(
     (raw: RunResult): FinishSummary => {
       const draft = cloneSave(saveRef.current)
+      rolloverDaily(draft)
       draft.coins += raw.coins
       draft.stats.totalCoins += raw.coins
       draft.stats.totalDistance += raw.distance
       draft.stats.bestScore = Math.max(draft.stats.bestScore, raw.score)
+
+      // Daily mission counters
+      const daily = draft.dailyStats
+      daily.coins += raw.coins
+      daily.distance += raw.distance
+      daily.bestScore = Math.max(daily.bestScore, raw.score)
+      if (raw.endless) daily.endlessDist = Math.max(daily.endlessDist, raw.distance)
 
       let rewardCoins = 0
       let stars = 0
@@ -261,7 +356,11 @@ export default function App() {
             bestScore: Math.max(prev?.bestScore ?? 0, raw.score),
           }
           draft.stats.levelsCompleted += 1
-          if (raw.clean) draft.stats.cleanFinishes += 1
+          daily.levels += 1
+          if (raw.clean) {
+            draft.stats.cleanFinishes += 1
+            daily.clean += 1
+          }
           // finishing refunds the heart
           draft.hearts = Math.min(MAX_HEARTS, draft.hearts + 1)
           if (draft.hearts >= MAX_HEARTS) draft.heartsUpdatedAt = Date.now()
@@ -332,21 +431,26 @@ export default function App() {
 
   const claimMission = useCallback(
     (id: string) => {
-      const m = MISSIONS.find((x) => x.id === id)
-      if (!m) return
-      const cur = saveRef.current
-      if (cur.claimedMissions.includes(id) || missionProgress(m, cur) < m.target) {
+      const cur = cloneSave(saveRef.current)
+      const rolledOver = rolloverDaily(cur)
+      const m = missionsForDay(cur.missionDay || todayKey()).find((x) => x.id === id)
+      if (!m) {
+        if (rolledOver) commit(cur)
         audio.denied()
         return
       }
-      update((d) => {
-        d.claimedMissions.push(id)
-        d.coins += m.reward
-      })
+      if (cur.claimedMissions.includes(id) || dailyMissionProgress(m, cur) < m.target) {
+        if (rolledOver) commit(cur)
+        audio.denied()
+        return
+      }
+      cur.claimedMissions.push(id)
+      cur.coins += m.reward
+      commit(cur)
       audio.reward()
-      notify(`Mission complete: +${m.reward} coins!`)
+      notify(`Daily mission complete: +${m.reward} coins!`)
     },
-    [update, notify],
+    [commit, notify],
   )
 
   const claimMilestone = useCallback(() => {
@@ -526,7 +630,13 @@ export default function App() {
               />
             )}
             {tab === 'trophies' && (
-              <TrophiesScreen save={save} onBack={() => setTab('home')} onClaimMission={claimMission} />
+              <TrophiesScreen
+                save={save}
+                missions={missions}
+                resetLabel={dailyResetLabel}
+                onBack={() => setTab('home')}
+                onClaimMission={claimMission}
+              />
             )}
             {tab === 'settings' && (
               <SettingsScreen
@@ -574,31 +684,7 @@ export default function App() {
         {/* --------- All levels --------- */}
         {modal === 'levels' && (
           <Modal title="Choose a Level" onClose={() => setModal(null)}>
-            <div className="level-list">
-              {LEVELS.map((l) => {
-                const locked = l.id > save.unlockedLevel
-                const rec = save.records[l.id]
-                return (
-                  <div key={l.id} className={`level-row ${locked ? 'locked' : ''}`}>
-                    <div className="level-row-info">
-                      <strong>Level {l.id} — {l.name}</strong>
-                      <span>{fmt(l.distance)} m · {l.coinGoal} coins · reward {l.reward}</span>
-                      {rec && <span>Best score {fmt(rec.bestScore)}</span>}
-                    </div>
-                    {locked ? (
-                      <span className="locked-tag"><Lock size={15} /> Finish level {l.id - 1}</span>
-                    ) : (
-                      <>
-                        <Stars earned={rec?.stars ?? 0} size={17} />
-                        <button type="button" className="shop-btn green" onClick={() => { clickSfx(); openIntro(l) }}>
-                          <Play size={15} /> Play
-                        </button>
-                      </>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
+            <LevelList save={save} onOpenLevel={openIntro} />
           </Modal>
         )}
 
@@ -640,7 +726,7 @@ export default function App() {
                 <Gift size={19} /> {dailyReady ? 'Claim daily reward' : 'Daily reward claimed'}
               </button>
               <button type="button" className="big-btn blue" onClick={() => { clickSfx(); setModal(null); setPlaying(null); setTab('trophies') }}>
-                <Trophy size={19} /> Missions{claimableMissions > 0 ? ` (${claimableMissions} ready!)` : ''}
+                <Trophy size={19} /> Daily missions{claimableMissions > 0 ? ` (${claimableMissions} ready!)` : ''}
               </button>
               <button type="button" className="big-btn orange" onClick={() => { clickSfx(); startRun(null) }}>
                 <Flag size={19} /> Play Endless for coins
@@ -696,7 +782,7 @@ export default function App() {
               <div className="result-row"><span>After purchase</span><strong><CoinPrice amount={Math.max(0, save.coins - purchasePrice)} /></strong></div>
             </div>
             {!canAfford && (
-              <p className="modal-text warn">Not enough coins yet — you need {fmt(purchasePrice - save.coins)} more. Drive levels, grab the daily reward or finish missions!</p>
+              <p className="modal-text warn">Not enough coins yet — you need {fmt(purchasePrice - save.coins)} more. Drive levels, grab the daily reward or finish today&apos;s missions!</p>
             )}
             <div className="result-actions">
               <button type="button" className="big-btn green" disabled={!canAfford} onClick={() => { clickSfx(); confirmPurchase() }}>
@@ -747,34 +833,32 @@ export default function App() {
         {tab !== 'trophies' && (
           <section className="side-card side-missions">
             <h3>
-              <span className="side-hd-ico"><Trophy size={20} /></span> Your Missions
+              <span className="side-hd-ico"><Trophy size={20} /></span> Daily Missions
+              <span className="side-mission-reset">resets in {dailyResetLabel}</span>
             </h3>
             <ul className="side-mission-list">
-              {(['totalCoins', 'levelsCompleted', 'cleanFinishes'] as const)
-                .map((metric) => MISSIONS.find((x) => x.metric === metric))
-                .filter((m): m is (typeof MISSIONS)[number] => m !== undefined)
-                .map((m) => {
-                  const prog = Math.min(m.target, missionProgress(m, save))
-                  const claimed = save.claimedMissions.includes(m.id)
-                  const ready = prog >= m.target && !claimed
-                  return (
-                    <li key={m.id} className={`side-mission ${ready ? 'ready' : ''} ${claimed ? 'claimed' : ''}`}>
-                      <span className={`mi-ico mi-${m.metric}`}>
-                        {m.metric === 'totalCoins' ? <Coins size={24} />
-                          : m.metric === 'levelsCompleted' ? <RefStar size={24} fill="currentColor" />
-                          : <RefNoSymbol size={24} />}
-                      </span>
-                      <span className="side-mission-title">{m.description}</span>
-                      <span className="side-mission-reward">
-                        <Coins size={15} /> +{m.reward}
-                      </span>
-                      <span className="side-mission-track">
-                        <span className="side-mission-fill" style={{ width: `${Math.round((prog / m.target) * 100)}%` }} />
-                      </span>
-                      <span className="side-mission-count">{fmt(prog)} / {fmt(m.target)}</span>
-                    </li>
-                  )
-                })}
+              {missions.map((m) => {
+                const prog = Math.min(m.target, dailyMissionProgress(m, save))
+                const claimed = save.claimedMissions.includes(m.id)
+                const ready = prog >= m.target && !claimed
+                return (
+                  <li key={m.id} className={`side-mission ${ready ? 'ready' : ''} ${claimed ? 'claimed' : ''}`}>
+                    <span className={`mi-ico mi-${m.metric}`}>
+                      <MissionIcon metric={m.metric} />
+                    </span>
+                    <span className="side-mission-title">{m.description}</span>
+                    <span className="side-mission-reward">
+                      <Coins size={15} /> +{m.reward}
+                    </span>
+                    <span className="side-mission-track">
+                      <span className="side-mission-fill" style={{ width: `${Math.round((prog / m.target) * 100)}%` }} />
+                    </span>
+                    <span className="side-mission-count">
+                      {claimed ? 'Claimed' : ready ? 'Claim in Trophies!' : `${fmt(prog)} / ${fmt(m.target)}`}
+                    </span>
+                  </li>
+                )
+              })}
             </ul>
           </section>
         )}

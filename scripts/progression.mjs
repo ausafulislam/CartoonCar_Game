@@ -5,14 +5,21 @@ const errors = []
 const browser = await chromium.launch({ headless: true })
 const ctx = await browser.newContext({ viewport: { width: 430, height: 880 } })
 await ctx.addInitScript(() => {
-  if (!localStorage.getItem('cca-seeded')) { localStorage.setItem('cca-seeded', '1'); localStorage.setItem('cartoon-car-adventure-save-v1', JSON.stringify({
-    version: 1, coins: 3000, hearts: 5, heartsUpdatedAt: Date.now(),
-    unlockedLevel: 1, records: {}, ownedCars: ['ruby'], selectedCar: 'ruby',
-    upgrades: { magnet: false, shield: false, tires: false }, boost: 1, milestonesClaimed: 0,
-    stats: { totalCoins: 0, levelsCompleted: 0, bestScore: 0, endlessBest: 0, endlessBestDist: 0, cleanFinishes: 0, totalDistance: 0, runs: 0 },
-    claimedMissions: [], lastDaily: '', dailyStreak: 0,
-    settings: { music: 0.55, sfx: 0.85, muted: false, vibration: true },
-  })) }
+  if (!localStorage.getItem('cca-seeded')) {
+    localStorage.setItem('cca-seeded', '1')
+    const d = new Date()
+    const day = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    localStorage.setItem('cartoon-car-adventure-save-v1', JSON.stringify({
+      version: 1, coins: 3000, hearts: 5, heartsUpdatedAt: Date.now(),
+      unlockedLevel: 1, records: {}, ownedCars: ['ruby'], selectedCar: 'ruby',
+      upgrades: { magnet: false, shield: false, tires: false }, boost: 1, milestonesClaimed: 0,
+      stats: { totalCoins: 0, levelsCompleted: 0, bestScore: 0, endlessBest: 0, endlessBestDist: 0, cleanFinishes: 0, totalDistance: 0, runs: 0 },
+      claimedMissions: [], missionDay: day,
+      dailyStats: { coins: 0, levels: 0, clean: 0, distance: 0, runs: 0, bestScore: 0, endlessDist: 0 },
+      lastDaily: '', dailyStreak: 0,
+      settings: { music: 0.55, sfx: 0.85, muted: false, vibration: true },
+    }))
+  }
 })
 const page = await ctx.newPage()
 page.on('console', (m) => { if (m.type() === 'error') errors.push('console: ' + m.text()) })
@@ -42,6 +49,7 @@ await page.getByRole('button', { name: /Buy now/i }).click()
 await page.waitForTimeout(400)
 let s = await save()
 log('after buying Sky (2450 expected): coins =', s.coins, '| selected =', s.selectedCar, '| owned =', s.ownedCars.join(','))
+log('daily missions today:', s.missionDay, '| daily runs started:', s.dailyStats.runs)
 
 // Play Level 1 and drive it to the finish via the debug handle
 await page.getByRole('button', { name: 'Home', exact: true }).click()
@@ -65,6 +73,7 @@ await page.waitForTimeout(1400)
 await shot('13-victory')
 s = await save()
 log('after victory: unlocked =', s.unlockedLevel, '| record L1 =', JSON.stringify(s.records[1]), '| coins =', s.coins, '| hearts =', s.hearts, '| completed =', s.stats.levelsCompleted, '| clean =', s.stats.cleanFinishes)
+log('daily mission counters: levels =', s.dailyStats.levels, '| clean =', s.dailyStats.clean, '| distance =', s.dailyStats.distance, '| coins =', s.dailyStats.coins)
 
 // Next level button starts Level 2
 await page.getByRole('button', { name: /^Level 2$/ }).click()
@@ -82,14 +91,32 @@ await page.waitForTimeout(500)
 await shot('14-gameover')
 await page.getByRole('button', { name: /^Home$/ }).click()
 
-// Persistence across reload
+// Daily mission rollover: yesterday's progress + claims must reset on reload
+await page.evaluate(() => {
+  const key = 'cartoon-car-adventure-save-v1'
+  const prev = JSON.parse(localStorage.getItem(key))
+  prev.missionDay = '2020-01-01'
+  prev.claimedMissions = ['finish1']
+  prev.dailyStats = { coins: 500, levels: 5, clean: 2, distance: 5000, runs: 9, bestScore: 9999, endlessDist: 900 }
+  localStorage.setItem(key, JSON.stringify(prev))
+})
 await page.reload({ waitUntil: 'networkidle' })
 await page.getByRole('button', { name: /LEVEL 2/i }).waitFor({ timeout: 15000 })
+s = await save()
+const today = await page.evaluate(() => {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+})
 log('after reload: LEVEL 2 button visible (persistence ok)')
+log('daily rollover: day =', s.missionDay, '| today =', today,
+  '| stats zeroed =', Object.values(s.dailyStats).every((v) => v === 0),
+  '| claims cleared =', s.claimedMissions.length === 0)
 
 // Mission claim: "First Finish" + "Careful Driver" should be claimable
 await page.getByRole('button', { name: 'Trophies', exact: true }).click()
 await page.waitForTimeout(500)
+const missionCards = await page.locator('.mission-card').count()
+log('daily missions listed in Trophies:', missionCards)
 const claimButtons = await page.getByRole('button', { name: /^Claim/ }).all()
 log('claimable mission buttons:', claimButtons.length)
 if (claimButtons.length > 0) {

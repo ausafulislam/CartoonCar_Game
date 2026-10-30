@@ -22,11 +22,11 @@ Near misses give bonus points!
 
 - **Reference-style home screen** — original AI-generated tropical town + cute 3D-style hero car with idle animation, top HUD (profile / coins / hearts with a *real* regeneration timer), treasure-milestone progress bar, reward Boost selector, big green `LEVEL n` button and a 5-tab bottom navigation. Every button works.
 - **Real gameplay (Phaser 3)** — scrolling themed roads, smooth steering/acceleration/braking, traffic cars & trucks, cones/barriers, spinning coin chains, near-miss bonuses, crash invulnerability/blink, camera shake, particles, countdown, pause, auto-pause when the tab is hidden.
-- **5 levels** — Sunny Streets, Palm Paradise, Desert Road, City Rush, Golden Highway: different distances, coin goals, traffic density/speed and roadside themes (palms, cacti, city buildings…), plus an **Endless mode** with ramping difficulty and a saved best score.
+- **50 levels** — Sunny Streets all the way to Champion's Highway: every level has its own name, distance, coin goal, traffic density/speed and roadside theme (palms, cacti, city buildings…), ramping smoothly from 1,200 m to 7,080 m, plus an **Endless mode** with ramping difficulty and a saved best score. The level picker opens scrolled to your current level.
 - **Progression & economy** — coins, hearts (start a run = 1 heart, finishing refunds it, +1 every 90 s, or buy for 50 coins), level unlocks & stars, Boost ×1/×2/×3 (bigger rewards, busier roads), 7-day daily rewards, a repeatable 250-coin treasure milestone.
 - **Garage** — 4 original cartoon cars (Ruby, Officer Sky, Sunny Taxi, Minty) with distinct looks and Speed/Acceleration/Handling stats that genuinely change handling & top speed.
 - **Shop** — cars + 3 functional upgrades (Coin Magnet, Safety Shield, Turbo Tires) with confirmation dialogs, balance checks and owned/selected states. Earned currency only.
-- **Trophies & missions** — 9 missions tracked from real gameplay events, claimable coin rewards, level-star overview and lifetime stats.
+- **Trophies & daily missions** — **3 fresh daily missions pick themselves every day** (coins, level finishes, clean runs, distance, runs started, best score, Endless distance) with a visible countdown to the refresh; missions and their progress reset at local midnight exactly like the daily reward. Includes claimable coin rewards, a 150-star level overview and lifetime stats.
 - **Settings** — music/SFX volume sliders (applied instantly), mute, vibration toggle, how-to-play, confirmed progress reset.
 - **Original synthesized audio** — cheerful music loop, engine hum that follows your speed, coin/crash/shield/win/lose/click sounds via Web Audio (no audio files, no licensing issues). Starts after the first user tap, per browser autoplay rules.
 - **Persistent saves** — everything lives in `localStorage` with validation and safe fallbacks, so refreshes never lose progress.
@@ -113,7 +113,7 @@ To replace artwork, drop new files into `public/assets/…` with the same names
 
 Automated headless-browser tests (Playwright) cover the home screen, real
 driving input, collisions, pause, purchases, daily rewards, a 3-star victory,
-level unlocking, the game-over flow and save persistence across reloads:
+level unlocking, the game-over flow, daily missions and save persistence across reloads:
 
 ```bash
 npx playwright-core install chromium   # one-time browser download (~120 MB)

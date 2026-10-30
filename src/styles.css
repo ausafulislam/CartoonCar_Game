@@ -556,6 +556,11 @@ h1, h2, h3, p { margin-top: 0; }
 .mission-progress { font-size: 11.5px; font-weight: 700; color: #6b5a44; }
 .mission-done { display: inline-flex; align-items: center; gap: 4px; color: #1d8a12; font-weight: 700; }
 .mission-reward { font-size: 12px; color: #8a7a5c; font-weight: 600; text-align: right; }
+.mission-reset {
+  display: flex; align-items: center; gap: 6px;
+  margin: -4px 2px 10px; font-size: 12.5px; font-weight: 700;
+  color: #eaf6ff; text-shadow: 0 1px 0 rgba(0, 60, 120, 0.55);
+}
 
 /* Settings */
 .settings-card h2 { margin: 0 0 10px; font-size: 19px; color: #7a4a12; }
@@ -634,6 +639,7 @@ h1, h2, h3, p { margin-top: 0; }
 .objective-box p { display: flex; align-items: center; gap: 8px; margin: 6px 0; font-size: 14.5px; color: #6b4e22; }
 .intro-best { font-weight: 700; color: #c2511f !important; }
 .level-btn.intro-play { margin-top: 13px; font-size: 26px; width: min(260px, 88%); }
+.level-list-note { margin: 0 0 10px; font-size: 12.5px; font-weight: 700; color: #8a7a5c; }
 .level-list { display: flex; flex-direction: column; gap: 9px; }
 .level-row {
   display: flex; align-items: center; gap: 9px;
@@ -1249,13 +1255,28 @@ h1, h2, h3, p { margin-top: 0; }
 }
 .mi-ico.mi-totalCoins { background: radial-gradient(circle at 35% 30%, #ffe9a0, #ffc42e 62%, #f0a61c); border: 3px solid #e09b1c; color: #7a4e00; }
 .mi-ico.mi-levelsCompleted { background: radial-gradient(circle at 35% 30%, #6fc5ff, #2e9bf5 65%, #1672dd); border: 3px solid #0f5fbe; color: #ffd24a; }
-.mi-ico.mi-cleanFinishes { background: #ffffff; border: 3px solid #e23b3b; color: #e23b3b; }
+.mi-ico.mi-clean { background: #ffffff; border: 3px solid #e23b3b; color: #e23b3b; }
+.mi-ico.mi-coins { background: radial-gradient(circle at 35% 30%, #ffe9a0, #ffc42e 62%, #f0a61c); border: 3px solid #e09b1c; color: #7a4e00; }
+.mi-ico.mi-levels { background: radial-gradient(circle at 35% 30%, #6fc5ff, #2e9bf5 65%, #1672dd); border: 3px solid #0f5fbe; color: #ffd24a; }
+.mi-ico.mi-distance { background: radial-gradient(circle at 35% 30%, #b6f08a, #5ecb3c 65%, #3aa521); border: 3px solid #2c8816; color: #ffffff; }
+.mi-ico.mi-runs { background: radial-gradient(circle at 35% 30%, #d5b6ff, #9b6bff 65%, #7a45e0); border: 3px solid #5f2ebf; color: #ffffff; }
+.mi-ico.mi-bestScore { background: radial-gradient(circle at 35% 30%, #ffd9a0, #ff9f1c 65%, #e07f00); border: 3px solid #bf6600; color: #ffffff; }
+.mi-ico.mi-endlessDist { background: radial-gradient(circle at 35% 30%, #ffb3c7, #ff5d8f 65%, #e03a72); border: 3px solid #bf2a5d; color: #ffffff; }
 .side-mission .side-mission-title { grid-area: title; align-self: end; font-size: 15.5px; font-weight: 700; color: #fff; }
 .side-mission .side-mission-reward { grid-area: reward; justify-self: end; align-self: end; color: #fff; font-size: 16px; font-weight: 800; display: inline-flex; align-items: center; gap: 4px; margin: 0; }
 .side-mission .side-mission-reward svg { color: #ffc42e; }
 .side-mission .side-mission-track { grid-area: bar; height: 14px; }
 .side-mission .side-mission-count { grid-area: count; justify-self: end; align-self: start; font-size: 15px; font-weight: 700; color: #eaf4ff; }
-.side-mission:has(.mi-levelsCompleted) .side-mission-fill { background: linear-gradient(90deg, #7dd3fc, #2e9bf5); }
+.side-mission:has(.mi-levels) .side-mission-fill { background: linear-gradient(90deg, #7dd3fc, #2e9bf5); }
+.side-mission:has(.mi-clean) .side-mission-fill { background: linear-gradient(90deg, #ffffff, #ffd5d5); }
+.side-mission:has(.mi-runs) .side-mission-fill { background: linear-gradient(90deg, #d5b6ff, #9b6bff); }
+.side-mission:has(.mi-bestScore) .side-mission-fill { background: linear-gradient(90deg, #ffd98f, #ff9f1c); }
+.side-mission:has(.mi-endlessDist) .side-mission-fill { background: linear-gradient(90deg, #ffb3c7, #ff5d8f); }
+.side-missions h3 { flex-wrap: wrap; row-gap: 4px; }
+.side-mission-reset {
+  margin-left: auto; font-size: 12px; font-weight: 700;
+  color: #cfe6ff; letter-spacing: 0.2px; white-space: nowrap;
+}
 
 /* ============ Reference landscape GUI (laptop/desktop >=1150) ============ */
 @media (min-width: 1150px) and (orientation: landscape) {
