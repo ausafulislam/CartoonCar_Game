@@ -63,10 +63,11 @@ export function BottomNav({ tab, onTab, claimableMissions }: BottomNavProps) {
     <button
       key={id}
       type="button"
-      className={`nav-item ${tab === id ? 'active' : ''} ${id === 'home' ? 'nav-home' : ''}`}
+      className={`nav-item ${tab === id ? 'active' : ''}`}
       onClick={() => { clickSfx(); onTab(id) }}
       aria-label={label}
       aria-current={tab === id ? 'page' : undefined}
+      data-tab={id}
     >
       <span className="nav-icon">
         {icon}

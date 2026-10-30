@@ -51,7 +51,7 @@ const H = 800
 const ROAD_LEFT = 58
 const ROAD_RIGHT = 392
 const LANE_W = (ROAD_RIGHT - ROAD_LEFT) / 4
-const PLAYER_Y = 638
+const PLAYER_Y = 604 // sits clear of the touch control deck
 const MAX_HITS = 3
 
 const laneCenter = (i: number) => ROAD_LEFT + LANE_W * (i + 0.5)

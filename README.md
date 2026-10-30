@@ -8,10 +8,16 @@ A colorful, family-friendly, mobile-first **cartoon driving game that runs entir
 
 | Action | Keyboard (desktop) | Touch (mobile) |
 | --- | --- | --- |
-| Steer left / right | `◀` `▶` or `A` / `D` | Hold the big `◀` `▶` buttons |
-| Speed up | `▲` or `W` | Hold **GAS** |
-| Brake | `▼` or `S` | Hold **BRAKE** |
-| Pause | `P` or `Esc` | ⏸ button (top-left) |
+| Steer left / right | `◀` `▶` or `A` / `D` | Hold the **LEFT** / **RIGHT** pads |
+| Speed up | `▲` or `W` | Hold the green **GAS** pedal |
+| Brake | `▼` or `S` | Hold the red **BRAKE** pedal |
+| Pause | `P` / `Esc` | ⏸ button (top-left) |
+
+The in-game control deck sits on a soft gradient that fades into the road: steering
+pads on the left, pedals on the right and a **live speed dial** in the middle. Every
+button is multi-touch aware (steer + accelerate at once), shows its pressed state and
+releases itself automatically when the run pauses, the tab is hidden or you lift a
+finger anywhere on screen.
 
 **Goal:** drive the full distance to finish a level. Collect coins, dodge traffic,
 cones and barriers. 3 crashes ends the run (cones only slow you down).

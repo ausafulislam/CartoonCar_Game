@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
 import {
   ChevronDown,
   ChevronLeft,
@@ -67,10 +67,77 @@ export function GameViewport(props: GameViewportProps) {
   const [result, setResult] = useState<{ raw: RunResult; summary: FinishSummary } | null>(null)
   const [pressed, setPressed] = useState<TouchInput>({ left: false, right: false, up: false, down: false })
 
+  // One entry per pressed pointer id, so several fingers can hold different
+  // controls at once and a finger sliding off a button can never leave it stuck.
+  const pointersRef = useRef<Record<keyof TouchInput, Set<number>>>({
+    left: new Set(), right: new Set(), up: new Set(), down: new Set(),
+  })
+
   const setInput = useCallback((key: keyof TouchInput, value: boolean) => {
     inputRef.current[key] = value
     setPressed((p) => (p[key] === value ? p : { ...p, [key]: value }))
   }, [])
+
+  const buzz = useCallback((ms: number) => {
+    if (propsRef.current.vibration && 'vibrate' in navigator) navigator.vibrate?.(ms)
+  }, [])
+
+  const pressControl = useCallback((key: keyof TouchInput, pointerId: number) => {
+    const held = pointersRef.current[key]
+    if (held.has(pointerId)) return
+    const isFirstFinger = held.size === 0
+    held.add(pointerId)
+    if (isFirstFinger) {
+      setInput(key, true)
+      buzz(8)
+    }
+  }, [setInput, buzz])
+
+  const releaseControl = useCallback((key: keyof TouchInput, pointerId: number) => {
+    const held = pointersRef.current[key]
+    if (!held.delete(pointerId)) return
+    if (held.size === 0) setInput(key, false)
+  }, [setInput])
+
+  /** Let go of every control (pause, results, tab switches, lost focus…). */
+  const releaseAll = useCallback(() => {
+    const keys = Object.keys(pointersRef.current) as (keyof TouchInput)[]
+    keys.forEach((k) => pointersRef.current[k].clear())
+    // Mutate (never replace) the object the racing scene holds a reference to.
+    inputRef.current.left = false
+    inputRef.current.right = false
+    inputRef.current.up = false
+    inputRef.current.down = false
+    setPressed((p) => (p.left || p.right || p.up || p.down
+      ? { left: false, right: false, up: false, down: false }
+      : p))
+  }, [])
+
+  // Safety net: any pointer that ends anywhere releases its control, and losing
+  // focus drops every held control so the car never drives off on its own.
+  useEffect(() => {
+    const endAnywhere = (e: PointerEvent) => {
+      (Object.keys(pointersRef.current) as (keyof TouchInput)[]).forEach((k) =>
+        releaseControl(k, e.pointerId),
+      )
+    }
+    const onVisibility = () => { if (document.hidden) releaseAll() }
+    window.addEventListener('pointerup', endAnywhere, true)
+    window.addEventListener('pointercancel', endAnywhere, true)
+    window.addEventListener('blur', releaseAll)
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => {
+      window.removeEventListener('pointerup', endAnywhere, true)
+      window.removeEventListener('pointercancel', endAnywhere, true)
+      window.removeEventListener('blur', releaseAll)
+      document.removeEventListener('visibilitychange', onVisibility)
+    }
+  }, [releaseAll, releaseControl])
+
+  // Pausing or finishing a run must drop the throttle immediately.
+  useEffect(() => {
+    if (paused || result) releaseAll()
+  }, [paused, result, releaseAll])
 
   /* ------------------------- Phaser lifecycle ------------------------- */
   useEffect(() => {
@@ -166,22 +233,24 @@ export function GameViewport(props: GameViewportProps) {
   }
 
   const bind = (key: keyof TouchInput) => ({
-    onPointerDown: (e: React.PointerEvent) => {
+    onPointerDown: (e: React.PointerEvent<HTMLButtonElement>) => {
       e.preventDefault()
-      // No setPointerCapture here — capturing a pointer to a single element
-      // blocks simultaneous touches on other buttons (multi-touch). Each
-      // button independently tracks its own pointer state via inputRef.
-      setInput(key, true)
+      // Capture this specific pointer (fingers have separate pointer ids, so
+      // multi-touch still works) — the button keeps receiving the release even
+      // if the finger slides outside it.
+      try {
+        e.currentTarget.setPointerCapture?.(e.pointerId)
+      } catch {
+        /* pointer already gone — the global release handler covers it */
+      }
+      pressControl(key, e.pointerId)
     },
-    onPointerUp: (e: React.PointerEvent) => {
+    onPointerUp: (e: React.PointerEvent<HTMLButtonElement>) => {
       e.preventDefault()
-      setInput(key, false)
+      releaseControl(key, e.pointerId)
     },
-    onPointerCancel: (e: React.PointerEvent) => {
-      e.preventDefault()
-      setInput(key, false)
-    },
-    onPointerLeave: () => setInput(key, false),
+    onPointerCancel: (e: React.PointerEvent<HTMLButtonElement>) => releaseControl(key, e.pointerId),
+    onLostPointerCapture: (e: React.PointerEvent<HTMLButtonElement>) => releaseControl(key, e.pointerId),
     onContextMenu: (e: React.SyntheticEvent) => e.preventDefault(),
   })
 
@@ -238,30 +307,64 @@ export function GameViewport(props: GameViewportProps) {
         </div>
       </div>
 
-      {/* Touch controls */}
+      {/* Control deck — steering pad, live speed dial and pedals */}
       {!result && (
-        <div className="touch-controls" aria-hidden={false}>
-          <div className="steer-cluster">
-            <button type="button" className={`touch-btn steer ${pressed.left ? 'down' : ''}`} {...bind('left')} aria-label="Steer left">
-              <ChevronLeft size={38} />
+        <div className="control-deck" aria-label="Driving controls">
+          <div className="deck-group steer-pad" role="group" aria-label="Steering">
+            <button
+              type="button"
+              className={`pad-btn pad-steer ${pressed.left ? 'is-down' : ''}`}
+              {...bind('left')}
+              aria-label="Steer left"
+              aria-pressed={pressed.left}
+            >
+              <ChevronLeft size={30} strokeWidth={3.2} />
+              <span className="pad-label">LEFT</span>
             </button>
-            <button type="button" className={`touch-btn steer ${pressed.right ? 'down' : ''}`} {...bind('right')} aria-label="Steer right">
-              <ChevronRight size={38} />
+            <button
+              type="button"
+              className={`pad-btn pad-steer ${pressed.right ? 'is-down' : ''}`}
+              {...bind('right')}
+              aria-label="Steer right"
+              aria-pressed={pressed.right}
+            >
+              <ChevronRight size={30} strokeWidth={3.2} />
+              <span className="pad-label">RIGHT</span>
             </button>
           </div>
-          <div className="speedo" aria-label={`Speed ${hud.kmh} kilometres per hour`}>
-            <Gauge size={17} />
-            <strong>{hud.kmh}</strong>
-            <span>km/h</span>
+
+          <div className="deck-center">
+            <div
+              className={`speed-dial ${hud.state}`}
+              role="img"
+              aria-label={`Speed ${hud.kmh} kilometres per hour`}
+              style={{ '--speed': `${Math.round(Math.max(0, Math.min(1, hud.speedNorm)) * 100)}%` } as CSSProperties}
+            >
+              <span className="speed-value">{hud.kmh}</span>
+              <span className="speed-unit">km/h</span>
+            </div>
           </div>
-          <div className="pedal-cluster">
-            <button type="button" className={`touch-btn brake ${pressed.down ? 'down' : ''}`} {...bind('down')} aria-label="Brake">
-              <ChevronDown size={22} />
-              <span>BRAKE</span>
+
+          <div className="deck-group pedal-pad" role="group" aria-label="Pedals">
+            <button
+              type="button"
+              className={`pad-btn pad-brake ${pressed.down ? 'is-down' : ''}`}
+              {...bind('down')}
+              aria-label="Brake"
+              aria-pressed={pressed.down}
+            >
+              <ChevronDown size={20} strokeWidth={3.2} />
+              <span className="pad-label">BRAKE</span>
             </button>
-            <button type="button" className={`touch-btn gas ${pressed.up ? 'down' : ''}`} {...bind('up')} aria-label="Accelerate">
-              <Gauge size={21} />
-              <span>GAS</span>
+            <button
+              type="button"
+              className={`pad-btn pad-gas ${pressed.up ? 'is-down' : ''}`}
+              {...bind('up')}
+              aria-label="Accelerate"
+              aria-pressed={pressed.up}
+            >
+              <Gauge size={24} strokeWidth={2.6} />
+              <span className="pad-label">GAS</span>
             </button>
           </div>
         </div>

@@ -156,6 +156,7 @@ export default function App() {
   const [nowTick, setNowTick] = useState(() => Date.now())
   const [needRefresh, setNeedRefresh] = useState(false)
   const toastTimer = useRef<number | null>(null)
+  const runReturnTab = useRef<Tab>('home')
   const prevCoins = useRef(save.coins)
   const musicStarted = useRef(false)
 
@@ -311,12 +312,20 @@ export default function App() {
   const startRun = useCallback(
     (level: LevelDef | null) => {
       if (!chargeHeart()) return
+      // Remember where the player came from so the bottom nav highlights the
+      // same tab again when they leave the run.
+      runReturnTab.current = tab
       setIntroLevel(null)
       setModal(null)
       setPlaying({ level, key: Date.now() })
     },
-    [chargeHeart],
+    [chargeHeart, tab],
   )
+
+  const exitRun = useCallback(() => {
+    setPlaying(null)
+    setTab(runReturnTab.current)
+  }, [])
 
   /* ---------------------------- run finish ---------------------------- */
   const handleFinish = useCallback(
@@ -589,7 +598,7 @@ export default function App() {
             onFinish={handleFinish}
             onRetryRequest={chargeHeart}
             onNextLevel={(id) => startRun(getLevel(id))}
-            onExit={() => { setPlaying(null); setTab('home') }}
+            onExit={exitRun}
           />
           </Suspense>
         ) : (

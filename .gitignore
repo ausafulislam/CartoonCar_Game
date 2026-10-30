@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Local test output (scripts/smoke.mjs)
+/test-shots/
