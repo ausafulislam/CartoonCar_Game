@@ -10,7 +10,9 @@ export interface CarDef {
   hero: string // /public path of the 3/4 hero artwork
   body: number // top-down sprite body colour (hex)
   roof: number
-  kind: 'standard' | 'police' | 'taxi' | 'mint'
+  kind:
+    | 'standard' | 'police' | 'taxi' | 'mint'
+    | 'sport' | 'van' | 'electric' | 'beetle' | 'offroad' | 'sedan' | 'racer' | 'super'
   /** Display stats 1-10 (also drive the real params below) */
   speedStat: number
   accelStat: number
@@ -69,6 +71,102 @@ export const CARS: CarDef[] = [
     kind: 'mint',
     speedStat: 9, accelStat: 9, handlingStat: 9,
     topSpeed: 1.2, accel: 1.22, handling: 1.28,
+  },
+  {
+    id: 'blaze',
+    name: 'Blaze',
+    tagline: 'Orange rocket with white racing stripes and a big spoiler.',
+    price: 2800,
+    hero: '/assets/cars/car-blaze-hero.png',
+    body: 0xf26a0d,
+    roof: 0xfff0d8,
+    kind: 'sport',
+    speedStat: 9, accelStat: 10, handlingStat: 7,
+    topSpeed: 1.26, accel: 1.3, handling: 1.12,
+  },
+  {
+    id: 'coco',
+    name: 'Coco',
+    tagline: 'A happy little camper van. Slow off the line, glued to the road.',
+    price: 3600,
+    hero: '/assets/cars/car-coco-hero.png',
+    body: 0x74cdbc,
+    roof: 0xfdf3dc,
+    kind: 'van',
+    speedStat: 6, accelStat: 6, handlingStat: 10,
+    topSpeed: 1.1, accel: 1.06, handling: 1.46,
+  },
+  {
+    id: 'bolt',
+    name: 'Bolt',
+    tagline: 'Silent electric hatch that zaps away from traffic lights.',
+    price: 4500,
+    hero: '/assets/cars/car-bolt-hero.png',
+    body: 0xa8d94a,
+    roof: 0xe8f6c8,
+    kind: 'electric',
+    speedStat: 9, accelStat: 10, handlingStat: 9,
+    topSpeed: 1.28, accel: 1.34, handling: 1.3,
+  },
+  {
+    id: 'bumble',
+    name: 'Bumble',
+    tagline: 'Buzzing yellow beetle with black stripes and a big heart.',
+    price: 5600,
+    hero: '/assets/cars/car-bumble-hero.png',
+    body: 0xf5c518,
+    roof: 0xf6d84f,
+    kind: 'beetle',
+    speedStat: 9, accelStat: 8, handlingStat: 10,
+    topSpeed: 1.24, accel: 1.26, handling: 1.38,
+  },
+  {
+    id: 'rocky',
+    name: 'Rocky',
+    tagline: 'Chunky off-roader that shrugs off cones like pebbles.',
+    price: 6800,
+    hero: '/assets/cars/car-rocky-hero.png',
+    body: 0x2f9c93,
+    roof: 0xd9c39a,
+    kind: 'offroad',
+    speedStat: 9, accelStat: 8, handlingStat: 10,
+    topSpeed: 1.32, accel: 1.24, handling: 1.42,
+  },
+  {
+    id: 'comet',
+    name: 'Comet',
+    tagline: 'Pearl-white luxury sedan with gold trim and effortless glide.',
+    price: 8000,
+    hero: '/assets/cars/car-comet-hero.png',
+    body: 0xf2e8d8,
+    roof: 0xcdb489,
+    kind: 'sedan',
+    speedStat: 9, accelStat: 9, handlingStat: 9,
+    topSpeed: 1.36, accel: 1.3, handling: 1.34,
+  },
+  {
+    id: 'apex',
+    name: 'Apex',
+    tagline: 'Black track weapon with a huge wing and neon cyan lines.',
+    price: 10000,
+    hero: '/assets/cars/car-apex-hero.png',
+    body: 0x23262d,
+    roof: 0x111318,
+    kind: 'racer',
+    speedStat: 10, accelStat: 10, handlingStat: 9,
+    topSpeed: 1.42, accel: 1.38, handling: 1.3,
+  },
+  {
+    id: 'nova',
+    name: 'Nova',
+    tagline: 'The glowing futuristic champion. Fastest car in the game!',
+    price: 12000,
+    hero: '/assets/cars/car-nova-hero.png',
+    body: 0x9d7bf0,
+    roof: 0x5be0f0,
+    kind: 'super',
+    speedStat: 10, accelStat: 10, handlingStat: 10,
+    topSpeed: 1.48, accel: 1.44, handling: 1.5,
   },
 ]
 

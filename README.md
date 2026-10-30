@@ -24,7 +24,7 @@ Near misses give bonus points!
 - **Real gameplay (Phaser 3)** — scrolling themed roads, smooth steering/acceleration/braking, traffic cars & trucks, cones/barriers, spinning coin chains, near-miss bonuses, crash invulnerability/blink, camera shake, particles, countdown, pause, auto-pause when the tab is hidden.
 - **50 levels** — Sunny Streets all the way to Champion's Highway: every level has its own name, distance, coin goal, traffic density/speed and roadside theme (palms, cacti, city buildings…), ramping smoothly from 1,200 m to 7,080 m, plus an **Endless mode** with ramping difficulty and a saved best score. The level picker opens scrolled to your current level.
 - **Progression & economy** — coins, hearts (start a run = 1 heart, finishing refunds it, +1 every 90 s, or buy for 50 coins), level unlocks & stars, Boost ×1/×2/×3 (bigger rewards, busier roads), 7-day daily rewards, a repeatable 250-coin treasure milestone.
-- **Garage** — 4 original cartoon cars (Ruby, Officer Sky, Sunny Taxi, Minty) with distinct looks and Speed/Acceleration/Handling stats that genuinely change handling & top speed.
+- **Garage — 12 original cartoon cars** — Ruby, Officer Sky, Sunny Taxi, Minty, Blaze, Coco, Bolt, Bumble, Rocky, Comet, Apex and Nova. Each has its own hero artwork, top-down sprite styling (racing stripes, spoilers, roof racks, neon supercar glow…) and Speed/Acceleration/Handling stats that genuinely change handling & top speed, from the free starter to the 12,000-coin Nova.
 - **Shop** — cars + 3 functional upgrades (Coin Magnet, Safety Shield, Turbo Tires) with confirmation dialogs, balance checks and owned/selected states. Earned currency only.
 - **Trophies & daily missions** — **3 fresh daily missions pick themselves every day** (coins, level finishes, clean runs, distance, runs started, best score, Endless distance) with a visible countdown to the refresh; missions and their progress reset at local midnight exactly like the daily reward. Includes claimable coin rewards, a 150-star level overview and lifetime stats.
 - **Settings** — music/SFX volume sliders (applied instantly), mute, vibration toggle, how-to-play, confirmed progress reset.
@@ -101,7 +101,7 @@ Phaser is lazy-loaded, keeping the initial bundle at ~86 KB gzipped.
 All artwork is **original and generated for this project**:
 
 - `home-bg.jpg` — tropical cartoon town plaza (AI-generated, no text/UI).
-- `car-*-hero.png` — four cute 3/4-view cartoon cars (AI-generated on white, background cut out programmatically and optimized).
+- `car-*-hero.png` — twelve cute 3/4-view cartoon cars (AI-generated on white, background cut out programmatically and optimized).
 - Top-down gameplay sprites (cars, truck, coins, cones, barriers, palms, buildings…) are **drawn at runtime** with Phaser Graphics in `RacingScene.ts`, so every car colour/variant stays perfectly consistent and the download stays small.
 - Icons: [Lucide](https://lucide.dev). Font: Fredoka (Google Fonts) with system fallbacks.
 - Audio: fully synthesized at runtime (`src/lib/audio.ts`) — zero audio files.

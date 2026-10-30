@@ -42,7 +42,7 @@ await page.locator('.modal-close').click()
 
 // Buy Officer Sky in Shop
 await page.getByRole('button', { name: 'Shop', exact: true }).click()
-await page.getByRole('button', { name: /Buy.*600/ }).click()
+await page.locator('.shop-card', { hasText: 'Officer Sky' }).getByRole('button', { name: /Buy/ }).click()
 await page.getByRole('button', { name: /Buy now/i }).waitFor()
 await shot('12-purchase-confirm')
 await page.getByRole('button', { name: /Buy now/i }).click()
