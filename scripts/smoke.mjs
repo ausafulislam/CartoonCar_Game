@@ -30,7 +30,8 @@ log('intro ok')
 
 // Start game
 await page.getByRole('button', { name: /^Play$/ }).click()
-await page.waitForSelector('.phaser-parent canvas', { timeout: 20000 })
+await page.waitForSelector('.control-deck', { timeout: 20000 })
+await page.waitForFunction(() => window.__ccaGame?.scene?.keys?.RacingScene?.state === 'playing', null, { timeout: 40000 })
 await page.waitForTimeout(1200)
 await shot('03-countdown')
 log('canvas ok')

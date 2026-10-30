@@ -67,43 +67,52 @@ export function GameViewport(props: GameViewportProps) {
   const [result, setResult] = useState<{ raw: RunResult; summary: FinishSummary } | null>(null)
   const [pressed, setPressed] = useState<TouchInput>({ left: false, right: false, up: false, down: false })
 
-  // One entry per pressed pointer id, so several fingers can hold different
-  // controls at once and a finger sliding off a button can never leave it stuck.
-  const pointersRef = useRef<Record<keyof TouchInput, Set<number>>>({
-    left: new Set(), right: new Set(), up: new Set(), down: new Set(),
-  })
+  // Every finger that is currently holding a control, keyed by pointer id.
+  // One pointer owns exactly one control at a time, so a finger that slides
+  // from GAS to LEFT hands the control over instead of locking both, and two
+  // fingers on two pads are completely independent (gas + steering).
+  const activePointers = useRef<Map<number, keyof TouchInput>>(new Map())
 
   const setInput = useCallback((key: keyof TouchInput, value: boolean) => {
+    // Mutate the object the racing scene holds a reference to — never replace it.
     inputRef.current[key] = value
     setPressed((p) => (p[key] === value ? p : { ...p, [key]: value }))
   }, [])
 
+  // Haptics fire on the next tick: calling vibrate() synchronously inside
+  // pointerdown interrupts the touch sequence on a few Android builds.
   const buzz = useCallback((ms: number) => {
-    if (propsRef.current.vibration && 'vibrate' in navigator) navigator.vibrate?.(ms)
+    if (!propsRef.current.vibration || !('vibrate' in navigator)) return
+    setTimeout(() => navigator.vibrate?.(ms), 0)
   }, [])
 
-  const pressControl = useCallback((key: keyof TouchInput, pointerId: number) => {
-    const held = pointersRef.current[key]
-    if (held.has(pointerId)) return
-    const isFirstFinger = held.size === 0
-    held.add(pointerId)
-    if (isFirstFinger) {
-      setInput(key, true)
-      buzz(8)
-    }
+  const isHeld = (key: keyof TouchInput) => {
+    for (const held of activePointers.current.values()) if (held === key) return true
+    return false
+  }
+
+  /** Bind a pointer to a control (moving it if that finger already held one). */
+  const pressPointer = useCallback((pointerId: number, key: keyof TouchInput) => {
+    const previous = activePointers.current.get(pointerId)
+    if (previous === key) return
+    const isNewPointer = previous === undefined
+    activePointers.current.set(pointerId, key)
+    if (previous && !isHeld(previous)) setInput(previous, false)
+    setInput(key, true)
+    if (isNewPointer) buzz(8)
   }, [setInput, buzz])
 
-  const releaseControl = useCallback((key: keyof TouchInput, pointerId: number) => {
-    const held = pointersRef.current[key]
-    if (!held.delete(pointerId)) return
-    if (held.size === 0) setInput(key, false)
+  /** Drop whatever a pointer was holding (its control stays on if another finger holds it). */
+  const releasePointer = useCallback((pointerId: number) => {
+    const key = activePointers.current.get(pointerId)
+    if (!key) return
+    activePointers.current.delete(pointerId)
+    if (!isHeld(key)) setInput(key, false)
   }, [setInput])
 
-  /** Let go of every control (pause, results, tab switches, lost focus…). */
+  /** Let go of every control (pause, results, lost focus, last finger lifted…). */
   const releaseAll = useCallback(() => {
-    const keys = Object.keys(pointersRef.current) as (keyof TouchInput)[]
-    keys.forEach((k) => pointersRef.current[k].clear())
-    // Mutate (never replace) the object the racing scene holds a reference to.
+    activePointers.current.clear()
     inputRef.current.left = false
     inputRef.current.right = false
     inputRef.current.up = false
@@ -113,26 +122,58 @@ export function GameViewport(props: GameViewportProps) {
       : p))
   }, [])
 
-  // Safety net: any pointer that ends anywhere releases its control, and losing
-  // focus drops every held control so the car never drives off on its own.
+  const controlOf = (el: Element | null): keyof TouchInput | null => {
+    const hit = el?.closest('[data-control]')
+    const value = hit?.getAttribute('data-control')
+    return value === 'left' || value === 'right' || value === 'up' || value === 'down' ? value : null
+  }
+
+  /**
+   * Pressing anywhere on the deck starts a control. Deliberately NOT using
+   * setPointerCapture: several mobile browsers mis-handle a second captured
+   * touch pointer, which showed up as "gas works but steering doesn't" (and
+   * vice versa). The deck tracks pointers itself and window-level listeners
+   * below always see the release.
+   */
+  const onDeckPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    const key = controlOf(e.target as Element | null)
+    if (!key) return
+    e.preventDefault()
+    pressPointer(e.pointerId, key)
+  }
+
+  // Any pointer that ends anywhere releases its control; sliding a finger onto
+  // another pad switches controls mid-press; the last finger leaving the screen
+  // clears everything so a control can never stay stuck down.
   useEffect(() => {
-    const endAnywhere = (e: PointerEvent) => {
-      (Object.keys(pointersRef.current) as (keyof TouchInput)[]).forEach((k) =>
-        releaseControl(k, e.pointerId),
-      )
+    const onUp = (e: PointerEvent) => releasePointer(e.pointerId)
+    const onMove = (e: PointerEvent) => {
+      if (!activePointers.current.has(e.pointerId)) return
+      const key = controlOf(document.elementFromPoint(e.clientX, e.clientY))
+      if (key) pressPointer(e.pointerId, key)
     }
+    const onTouchEnd = (e: TouchEvent) => { if (e.touches.length === 0) releaseAll() }
     const onVisibility = () => { if (document.hidden) releaseAll() }
-    window.addEventListener('pointerup', endAnywhere, true)
-    window.addEventListener('pointercancel', endAnywhere, true)
+    const stopGesture = (e: Event) => e.preventDefault()
+    window.addEventListener('pointerup', onUp, true)
+    window.addEventListener('pointercancel', onUp, true)
+    window.addEventListener('pointermove', onMove, { capture: true, passive: true })
     window.addEventListener('blur', releaseAll)
+    document.addEventListener('touchend', onTouchEnd, true)
+    document.addEventListener('touchcancel', onTouchEnd, true)
     document.addEventListener('visibilitychange', onVisibility)
+    document.addEventListener('gesturestart', stopGesture)
     return () => {
-      window.removeEventListener('pointerup', endAnywhere, true)
-      window.removeEventListener('pointercancel', endAnywhere, true)
+      window.removeEventListener('pointerup', onUp, true)
+      window.removeEventListener('pointercancel', onUp, true)
+      window.removeEventListener('pointermove', onMove, true)
       window.removeEventListener('blur', releaseAll)
+      document.removeEventListener('touchend', onTouchEnd, true)
+      document.removeEventListener('touchcancel', onTouchEnd, true)
       document.removeEventListener('visibilitychange', onVisibility)
+      document.removeEventListener('gesturestart', stopGesture)
     }
-  }, [releaseAll, releaseControl])
+  }, [pressPointer, releasePointer, releaseAll])
 
   // Pausing or finishing a run must drop the throttle immediately.
   useEffect(() => {
@@ -232,28 +273,6 @@ export function GameViewport(props: GameViewportProps) {
     audio.startEngine()
   }
 
-  const bind = (key: keyof TouchInput) => ({
-    onPointerDown: (e: React.PointerEvent<HTMLButtonElement>) => {
-      e.preventDefault()
-      // Capture this specific pointer (fingers have separate pointer ids, so
-      // multi-touch still works) — the button keeps receiving the release even
-      // if the finger slides outside it.
-      try {
-        e.currentTarget.setPointerCapture?.(e.pointerId)
-      } catch {
-        /* pointer already gone — the global release handler covers it */
-      }
-      pressControl(key, e.pointerId)
-    },
-    onPointerUp: (e: React.PointerEvent<HTMLButtonElement>) => {
-      e.preventDefault()
-      releaseControl(key, e.pointerId)
-    },
-    onPointerCancel: (e: React.PointerEvent<HTMLButtonElement>) => releaseControl(key, e.pointerId),
-    onLostPointerCapture: (e: React.PointerEvent<HTMLButtonElement>) => releaseControl(key, e.pointerId),
-    onContextMenu: (e: React.SyntheticEvent) => e.preventDefault(),
-  })
-
   const progressPct = hud.target ? Math.min(100, (hud.distance / hud.target) * 100) : 0
   const healthLeft = hud.maxHits - hud.hits
   const levelName = props.level ? `Level ${props.level.id} · ${props.level.name}` : 'Endless Mode'
@@ -309,12 +328,17 @@ export function GameViewport(props: GameViewportProps) {
 
       {/* Control deck — steering pad, live speed dial and pedals */}
       {!result && (
-        <div className="control-deck" aria-label="Driving controls">
+        <div
+          className="control-deck"
+          aria-label="Driving controls"
+          onPointerDown={onDeckPointerDown}
+          onContextMenu={(e) => e.preventDefault()}
+        >
           <div className="deck-group steer-pad" role="group" aria-label="Steering">
             <button
               type="button"
               className={`pad-btn pad-steer ${pressed.left ? 'is-down' : ''}`}
-              {...bind('left')}
+              data-control="left"
               aria-label="Steer left"
               aria-pressed={pressed.left}
             >
@@ -324,7 +348,7 @@ export function GameViewport(props: GameViewportProps) {
             <button
               type="button"
               className={`pad-btn pad-steer ${pressed.right ? 'is-down' : ''}`}
-              {...bind('right')}
+              data-control="right"
               aria-label="Steer right"
               aria-pressed={pressed.right}
             >
@@ -349,7 +373,7 @@ export function GameViewport(props: GameViewportProps) {
             <button
               type="button"
               className={`pad-btn pad-brake ${pressed.down ? 'is-down' : ''}`}
-              {...bind('down')}
+              data-control="down"
               aria-label="Brake"
               aria-pressed={pressed.down}
             >
@@ -359,7 +383,7 @@ export function GameViewport(props: GameViewportProps) {
             <button
               type="button"
               className={`pad-btn pad-gas ${pressed.up ? 'is-down' : ''}`}
-              {...bind('up')}
+              data-control="up"
               aria-label="Accelerate"
               aria-pressed={pressed.up}
             >

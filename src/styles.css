@@ -754,24 +754,31 @@ h1, h2, h3, p { margin-top: 0; }
    through. Buttons sit above the iOS/Android safe area. */
 .control-deck {
   position: absolute; left: 0; right: 0; bottom: 0; z-index: 10;
-  display: flex; align-items: flex-end; justify-content: space-between; gap: 10px;
+  display: flex; align-items: flex-end; justify-content: space-between; gap: clamp(4px, 2vw, 10px);
+  /* The side inset keeps the pads out of the OS back-swipe / edge-gesture
+     zones (they can cancel a press mid-hold); it grows to 18px on wider
+     screens and shrinks back to 12px on very narrow ones so nothing clips. */
   padding:
-    clamp(16px, 5.5vw, 34px) max(12px, env(safe-area-inset-right, 0px)) calc(env(safe-area-inset-bottom, 0px) + 12px) max(12px, env(safe-area-inset-left, 0px));
+    clamp(16px, 5.5vw, 34px) max(clamp(12px, 4vw, 18px), env(safe-area-inset-right, 0px)) calc(env(safe-area-inset-bottom, 0px) + 12px) max(clamp(12px, 4vw, 18px), env(safe-area-inset-left, 0px));
   background: linear-gradient(
     to top,
     rgba(8, 22, 42, 0.68) 0%,
     rgba(8, 22, 42, 0.36) 46%,
     rgba(8, 22, 42, 0) 100%
   );
-  pointer-events: none;
-  user-select: none; -webkit-user-select: none;
+  /* The whole band absorbs touches: a second finger landing between the pads
+     can never reach the canvas or start a browser gesture mid-press. */
+  pointer-events: auto;
+  user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
   touch-action: none;
+  overscroll-behavior: contain;
 }
-.deck-group { display: flex; align-items: flex-end; gap: clamp(5px, 2vw, 10px); pointer-events: auto; }
+.deck-group { display: flex; align-items: flex-end; gap: clamp(5px, 2vw, 10px); }
 .deck-center { flex: 1 1 auto; display: flex; justify-content: center; align-items: flex-end; padding-bottom: 6px; }
 
 .pad-btn {
   position: relative;
+  pointer-events: auto;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
   color: #ffffff; font-weight: 800;
   border: 3px solid rgba(255, 255, 255, 0.92);
@@ -783,19 +790,19 @@ h1, h2, h3, p { margin-top: 0; }
 }
 .pad-label { font-size: clamp(8.5px, 2.4vw, 10px); font-weight: 800; letter-spacing: 0.9px; opacity: 0.94; }
 .pad-steer {
-  width: clamp(52px, 15.5vw, 72px); height: clamp(52px, 15.5vw, 72px);
+  width: clamp(48px, 15.5vw, 72px); height: clamp(48px, 15.5vw, 72px);
   background: linear-gradient(180deg, rgba(70, 154, 248, 0.96), rgba(26, 100, 202, 0.96));
   box-shadow: 0 5px 0 rgba(13, 57, 115, 0.92), inset 0 2px 0 rgba(255, 255, 255, 0.3);
 }
 .pad-steer:first-child { border-bottom-left-radius: 28px; }
 .pad-steer:last-child { border-bottom-right-radius: 28px; }
 .pad-brake {
-  width: clamp(54px, 17vw, 74px); height: clamp(62px, 20vw, 84px);
+  width: clamp(50px, 17vw, 74px); height: clamp(58px, 20vw, 84px);
   background: linear-gradient(180deg, rgba(250, 96, 96, 0.96), rgba(206, 30, 30, 0.96));
   box-shadow: 0 6px 0 rgba(124, 13, 13, 0.92), inset 0 2px 0 rgba(255, 255, 255, 0.26);
 }
 .pad-gas {
-  width: clamp(62px, 19.5vw, 84px); height: clamp(74px, 23vw, 96px); border-radius: 26px;
+  width: clamp(58px, 19.5vw, 84px); height: clamp(70px, 23vw, 96px); border-radius: 26px;
   background: linear-gradient(180deg, rgba(96, 226, 92, 0.97), rgba(30, 176, 24, 0.97));
   box-shadow: 0 6px 0 rgba(17, 100, 12, 0.92), inset 0 2px 0 rgba(255, 255, 255, 0.3);
 }
@@ -811,7 +818,7 @@ h1, h2, h3, p { margin-top: 0; }
 
 .speed-dial {
   --speed: 0%;
-  width: clamp(50px, 15vw, 70px); height: clamp(50px, 15vw, 70px); border-radius: 50%;
+  width: clamp(46px, 15vw, 70px); height: clamp(46px, 15vw, 70px); border-radius: 50%;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   background:
     radial-gradient(circle at 50% 50%, rgba(11, 29, 52, 0.94) 60%, transparent 61%),
@@ -1160,8 +1167,8 @@ h1, h2, h3, p { margin-top: 0; }
   .game-hud { left: 50%; right: auto; width: var(--play-w); transform: translateX(-50%); }
   /* keep the thumbs just outside the play column when the screen is wider */
   .control-deck {
-    padding-left: max(12px, calc((100cqw - var(--play-w)) / 2 - 88px));
-    padding-right: max(12px, calc((100cqw - var(--play-w)) / 2 - 88px));
+    padding-left: max(18px, calc((100cqw - var(--play-w)) / 2 - 88px));
+    padding-right: max(18px, calc((100cqw - var(--play-w)) / 2 - 88px));
   }
   .keyboard-hint { max-width: calc(var(--play-w) - 8px); overflow: hidden; text-overflow: ellipsis; }
 }
