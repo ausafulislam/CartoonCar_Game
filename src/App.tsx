@@ -144,7 +144,14 @@ function MissionIcon({ metric, size = 24 }: { metric: MissionMetric; size?: numb
 }
 
 export default function App() {
-  const [save, setSave] = useState<SaveData>(() => loadSave())
+  const [save, setSave] = useState<SaveData>(() => {
+    // loadSave() validates, migrates and rolls the daily missions over in memory;
+    // write that normalised copy back so a crash/close right after opening still
+    // leaves yesterday's counters and claims behind.
+    const loaded = loadSave()
+    persistSave(loaded)
+    return loaded
+  })
   const saveRef = useRef(save)
   const [tab, setTab] = useState<Tab>('home')
   const [playing, setPlaying] = useState<{ level: LevelDef | null; key: number } | null>(null)
@@ -236,15 +243,18 @@ export default function App() {
   // Missions (and their progress) reset every local midnight, just like the
   // daily reward. Check while the app is open too, in case it stays open late.
   useEffect(() => {
-    const checkDay = () => {
+    const checkDay = (announce: boolean) => {
       const draft = cloneSave(saveRef.current)
       if (rolloverDaily(draft)) {
         commit(draft)
-        notify('New daily missions are ready!')
+        if (announce) notify('New daily missions are ready!')
       }
     }
-    const id = window.setInterval(checkDay, 30_000)
-    const onVisible = () => { if (!document.hidden) checkDay() }
+    // Roll over as soon as the app opens, so yesterday's progress and claimed
+    // rewards are never shown even for a second.
+    checkDay(false)
+    const id = window.setInterval(() => checkDay(true), 30_000)
+    const onVisible = () => { if (!document.hidden) checkDay(true) }
     document.addEventListener('visibilitychange', onVisible)
     window.addEventListener('focus', onVisible)
     return () => {

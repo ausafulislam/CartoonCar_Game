@@ -53,6 +53,10 @@ const ROAD_RIGHT = 392
 const LANE_W = (ROAD_RIGHT - ROAD_LEFT) / 4
 const PLAYER_Y = 604 // sits clear of the touch control deck
 const MAX_HITS = 3
+// Gap between the guarded pit's centre and the blocker's centre at a road-works
+// site: close enough to read as one site, far enough that the two sprites don't
+// overlap and the hitboxes stay separate.
+const WORKS_GAP = 84
 
 const laneCenter = (i: number) => ROAD_LEFT + LANE_W * (i + 0.5)
 
@@ -102,6 +106,7 @@ class RacingScene extends Phaser.Scene {
   private countText!: Phaser.GameObjects.Text
 
   private speed = 0
+  private tilt = 0
   private distance = 0
   private coinsCollected = 0
   private nearMisses = 0
@@ -138,6 +143,32 @@ class RacingScene extends Phaser.Scene {
     g.destroy()
   }
 
+  /**
+   * A traffic cone with its base at (x, y). Cones are only ever drawn *into* a
+   * road-works texture (the blocker and the pit), so they always arrive as part
+   * of a construction site and never as a lone obstacle on the road.
+   */
+  private drawCone(g: Phaser.GameObjects.Graphics, x: number, y: number, s = 1): void {
+    g.fillStyle(0x000000, 0.2)
+    g.fillEllipse(x, y - 1 * s, 24 * s, 7 * s)
+    g.fillStyle(0xd9541b, 1)
+    g.fillRoundedRect(x - 11 * s, y - 5 * s, 22 * s, 5 * s, 2 * s)
+    g.fillStyle(0xff6a26, 1)
+    g.fillTriangle(x, y - 30 * s, x - 8.5 * s, y - 4 * s, x + 8.5 * s, y - 4 * s)
+    g.fillStyle(0xffffff, 1)
+    g.fillPoints(
+      [
+        { x: x - 5.4 * s, y: y - 17 * s },
+        { x: x + 5.4 * s, y: y - 17 * s },
+        { x: x + 7 * s, y: y - 11.5 * s },
+        { x: x - 7 * s, y: y - 11.5 * s },
+      ],
+      true,
+    )
+    g.fillStyle(0xffb27a, 0.5)
+    g.fillTriangle(x - 1.4 * s, y - 26 * s, x - 3.2 * s, y - 8 * s, x - 1.4 * s, y - 8 * s)
+  }
+
   private makeSmallTextures(): void {
     if (!this.textures.exists('coin')) {
       const g = this.add.graphics()
@@ -163,41 +194,23 @@ class RacingScene extends Phaser.Scene {
       g.generateTexture('coin', 36, 36)
       g.destroy()
     }
-    if (!this.textures.exists('cone')) {
-      const g = this.add.graphics()
-      g.fillStyle(0x000000, 0.18)
-      g.fillEllipse(20, 40, 34, 9)
-      g.fillStyle(0xc2511f, 1)
-      g.fillRoundedRect(4, 34, 32, 8, 3)
-      g.fillStyle(0xff6a26, 1)
-      g.fillTriangle(20, 2, 8, 36, 32, 36)
-      g.fillStyle(0xffffff, 1)
-      g.fillPoints(
-        [
-          { x: 14.5, y: 20 },
-          { x: 25.5, y: 20 },
-          { x: 28, y: 27 },
-          { x: 12, y: 27 },
-        ],
-        true,
-      )
-      g.generateTexture('cone', 40, 44)
-      g.destroy()
-    }
     if (!this.textures.exists('barrier')) {
+      // The blocker as it looks on a real closed lane: the striped barrier with
+      // cones fencing off either side of it.
       const g = this.add.graphics()
+      const ox = 18
       g.fillStyle(0x000000, 0.16)
-      g.fillEllipse(44, 32, 80, 9)
+      g.fillEllipse(44 + ox, 32, 80, 9)
       g.fillStyle(0x8a93a3, 1)
-      g.fillRect(6, 12, 7, 20)
-      g.fillRect(75, 12, 7, 20)
+      g.fillRect(6 + ox, 12, 7, 20)
+      g.fillRect(75 + ox, 12, 7, 20)
       g.fillStyle(0xf4f6fa, 1)
-      g.fillRoundedRect(2, 2, 84, 20, 5)
+      g.fillRoundedRect(2 + ox, 2, 84, 20, 5)
       g.lineStyle(2, 0xb9c2d1, 1)
-      g.strokeRoundedRect(2, 2, 84, 20, 5)
+      g.strokeRoundedRect(2 + ox, 2, 84, 20, 5)
       g.fillStyle(0xe6352b, 1)
       for (let i = 0; i < 4; i++) {
-        const x = 8 + i * 21
+        const x = 8 + ox + i * 21
         g.fillPoints(
           [
             { x, y: 20 },
@@ -208,7 +221,62 @@ class RacingScene extends Phaser.Scene {
           true,
         )
       }
-      g.generateTexture('barrier', 88, 36)
+      this.drawCone(g, 11, 50)
+      this.drawCone(g, 113, 47, 0.92)
+      g.generateTexture('barrier', 124, 56)
+      g.destroy()
+    }
+    if (!this.textures.exists('pit')) {
+      // An open construction pit cut into the asphalt: sandy spoil ring, darker
+      // cut edge, a black shaft with a lit far wall, rubble on the floor and
+      // warning tape across the near lip — with cones standing around the cut,
+      // exactly like a real site.
+      const g = this.add.graphics()
+      const ox = 16
+      const oy = 10
+      g.fillStyle(0x000000, 0.22)
+      g.fillEllipse(44 + ox, 86 + oy, 72, 12)
+      // dug-up spoil outside the cut
+      g.fillStyle(0x9c8a6f, 1)
+      g.fillRoundedRect(0 + ox, 0 + oy, 88, 88, 18)
+      g.fillStyle(0xb3a184, 1)
+      g.fillCircle(10 + ox, 30 + oy, 6)
+      g.fillCircle(78 + ox, 44 + oy, 5)
+      g.fillCircle(16 + ox, 62 + oy, 4)
+      g.fillCircle(72 + ox, 14 + oy, 4)
+      // cut asphalt edge
+      g.fillStyle(0x4a453f, 1)
+      g.fillRoundedRect(6 + ox, 6 + oy, 76, 76, 14)
+      g.fillStyle(0x38332e, 1)
+      g.fillRoundedRect(10 + ox, 10 + oy, 68, 68, 11)
+      // the shaft
+      g.fillStyle(0x121110, 1)
+      g.fillRoundedRect(14 + ox, 14 + oy, 60, 60, 9)
+      // lit far wall (top) then a darker band so it reads as depth
+      g.fillStyle(0x554e45, 1)
+      g.fillRoundedRect(14 + ox, 14 + oy, 60, 11, 8)
+      g.fillStyle(0x2c2824, 1)
+      g.fillRoundedRect(14 + ox, 22 + oy, 60, 7, 5)
+      g.fillStyle(0x241f1b, 1)
+      g.fillRoundedRect(18 + ox, 60 + oy, 52, 12, 6)
+      // rubble on the floor
+      g.fillStyle(0x6f675b, 1)
+      g.fillCircle(32 + ox, 56 + oy, 5)
+      g.fillCircle(50 + ox, 64 + oy, 4)
+      g.fillCircle(40 + ox, 68 + oy, 3)
+      g.fillStyle(0x9a9184, 1)
+      g.fillCircle(58 + ox, 40 + oy, 3)
+      // warning tape across the near lip
+      g.fillStyle(0xffb31f, 1)
+      g.fillRoundedRect(13 + ox, 78 + oy, 62, 8, 3)
+      g.fillStyle(0x2b2b2b, 1)
+      for (let i = 0; i < 4; i++) g.fillRect(18 + ox + i * 15, 78 + oy, 7, 8)
+      // two cones marking the far corners of the cut. Nothing in front of the
+      // hole: the warning tape on the near lip already says "closed", and a cone
+      // standing over it just made the site look cluttered.
+      this.drawCone(g, 11, 44)
+      this.drawCone(g, 109, 44)
+      g.generateTexture('pit', 120, 112)
       g.destroy()
     }
     if (!this.textures.exists('spark')) {
@@ -383,6 +451,7 @@ class RacingScene extends Phaser.Scene {
     this.state = 'countdown'
     this.speed = 0
     this.distance = 0
+    this.tilt = 0
     this.coinsCollected = 0
     this.nearMisses = 0
     this.hits = 0
@@ -447,7 +516,7 @@ class RacingScene extends Phaser.Scene {
     // countdown
     this.countText = this.add
       .text(W / 2, H / 2 - 90, '3', {
-        fontFamily: 'Fredoka, "Trebuchet MS", sans-serif',
+        fontFamily: '"Fredoka Variable", Fredoka, "Trebuchet MS", sans-serif',
         fontSize: '96px',
         fontStyle: 'bold',
         color: '#ffffff',
@@ -542,10 +611,21 @@ class RacingScene extends Phaser.Scene {
     const ramp = this.opts.level === null ? 1 + Math.min(0.3, this.elapsed / 600) : 1
     car.setData('ownSpeed', Phaser.Math.Between(lo, hi) * ramp * (isTruck ? 0.82 : 1))
     car.setData('passed', false)
+    car.setData('lane', lane)
+    car.setData('targetX', laneCenter(lane))
+    car.setData('len', isTruck ? 124 : 94)
+    car.setData('lastChange', -9999)
+    car.setData('vy', 0)
   }
 
   private spawnCoinChain(): void {
     const lane = this.randomLane()
+    const cx = laneCenter(lane)
+    const blocked = this.obstacles.getChildren().some((obj) => {
+      const s = obj as Phaser.Physics.Arcade.Sprite
+      return s.active && Math.abs(s.x - cx) < 54 && s.y < 140
+    })
+    if (blocked) return
     const count = Phaser.Math.Between(4, 6)
     for (let i = 0; i < count; i++) {
       const y = -40 - i * 48
@@ -564,19 +644,53 @@ class RacingScene extends Phaser.Scene {
   private spawnObstacle(): void {
     const lane = this.randomLane()
     if (this.laneBusyAtTop(lane, 190)) return
-    const barrier = Math.random() < 0.32
-    const tex = barrier ? 'barrier' : 'cone'
-    const ob = this.obstacles.get(laneCenter(lane), -50, tex) as Phaser.Physics.Arcade.Sprite | null
-    if (!ob) return
-    ob.setTexture(tex)
-    ob.enableBody(true, laneCenter(lane), -50, true, true)
+    // Every hazard is one road-works site: the blocker standing at the open pit
+    // it guards. The blocker never shows up on its own, and a hole is never left
+    // unguarded — they are placed together, one car length apart.
+    this.spawnRoadWorks(lane)
+  }
+
+  /**
+   * One road-works site: the pit, with the blocker at its near lip. Both are
+   * spawned in the same lane, `WORKS_GAP` apart, so they always read as a single
+   * construction site rather than two separate obstacles.
+   */
+  private spawnRoadWorks(lane: number): void {
+    if (this.laneBusyAtTop(lane, 300)) return
+    const cx = laneCenter(lane)
+    this.armObstacle(this.obstacles.get(cx, -170, 'pit') as Phaser.Physics.Arcade.Sprite | null, 'pit', cx, -170)
+    this.armObstacle(
+      this.obstacles.get(cx, -170 + WORKS_GAP, 'barrier') as Phaser.Physics.Arcade.Sprite | null,
+      'barrier',
+      cx,
+      -170 + WORKS_GAP,
+    )
+  }
+
+  private armObstacle(
+    ob: Phaser.Physics.Arcade.Sprite | null,
+    kind: 'barrier' | 'pit',
+    x: number,
+    y: number,
+  ): Phaser.Physics.Arcade.Sprite | null {
+    if (!ob) return null
+    ob.setTexture(kind)
+    ob.enableBody(true, x, y, true, true)
     ob.setDepth(3)
     ob.setAngle(0)
     ob.setAlpha(1)
-    ob.setData('kind', barrier ? 'barrier' : 'cone')
+    ob.setData('kind', kind)
     const body = ob.body as Phaser.Physics.Arcade.Body
-    if (barrier) body.setSize(80, 24)
-    else body.setSize(26, 30)
+    if (kind === 'barrier') {
+      // hitbox = the striped bar only; the cones either side are decoration
+      body.setSize(80, 24)
+      body.setOffset(22, 0)
+    } else {
+      // hitbox = the open cut; the spoil ring and the cones don't crash you
+      body.setSize(64, 66)
+      body.setOffset(28, 21)
+    }
+    return ob
   }
 
   private spawnScenery(y = -80): void {
@@ -598,39 +712,62 @@ class RacingScene extends Phaser.Scene {
   }
 
   /* ----------------------------- interactions ----------------------------- */
+  // One emitter per tint, created once and re-used. Creating (and tearing down)
+  // a particle emitter for every coin picked up was allocating a game object,
+  // a timer and a GPU batch several times a second — a classic source of
+  // micro-stutter on phones.
+  private sparkEmitters = new Map<number, Phaser.GameObjects.Particles.ParticleEmitter>()
+
   private burst(x: number, y: number, tint: number, count: number, speed = 130): void {
-    const emitter = this.add.particles(x, y, 'spark', {
-      speed: { min: speed * 0.3, max: speed },
-      lifespan: 420,
-      quantity: count,
-      scale: { start: 0.85, end: 0 },
-      tint,
-      emitting: false,
-    })
-    emitter.setDepth(15)
+    let emitter = this.sparkEmitters.get(tint)
+    if (!emitter) {
+      emitter = this.add
+        .particles(0, 0, 'spark', {
+          speed: { min: speed * 0.3, max: speed },
+          lifespan: 420,
+          scale: { start: 0.85, end: 0 },
+          tint,
+          emitting: false,
+        })
+        .setDepth(15)
+      this.sparkEmitters.set(tint, emitter)
+    }
     emitter.explode(count, x, y)
-    this.time.delayedCall(600, () => emitter.destroy())
   }
 
+  // A single floating label re-used for every pickup / near miss. Creating a
+  // Phaser Text per event re-rasterises a canvas and uploads a new GPU texture
+  // each time, which hitches badly during coin chains.
+  private pickupLabel?: Phaser.GameObjects.Text
+
   private floatText(x: number, y: number, label: string, color = '#ffd93d'): void {
-    const t = this.add
-      .text(x, y, label, {
-        fontFamily: 'Fredoka, "Trebuchet MS", sans-serif',
-        fontSize: '22px',
-        fontStyle: 'bold',
-        color,
-        stroke: '#5b4a00',
-        strokeThickness: 4,
-      })
-      .setOrigin(0.5)
-      .setDepth(16)
+    if (!this.pickupLabel) {
+      this.pickupLabel = this.add
+        .text(0, 0, label, {
+          fontFamily: '"Fredoka Variable", Fredoka, "Trebuchet MS", sans-serif',
+          fontSize: '22px',
+          fontStyle: 'bold',
+          color,
+          stroke: '#5b4a00',
+          strokeThickness: 4,
+        })
+        .setOrigin(0.5)
+        .setDepth(16)
+    }
+    const t = this.pickupLabel
+    // setText/setColor skip their canvas re-render when the value is unchanged,
+    // so a stream of "+1" labels costs almost nothing.
+    if (t.text !== label) t.setText(label)
+    if (t.style.color !== color) t.setColor(color)
+    this.tweens.killTweensOf(t)
+    t.setPosition(x, y).setAlpha(1).setVisible(true)
     this.tweens.add({
       targets: t,
       y: y - 46,
       alpha: 0,
       duration: 650,
       ease: 'Quad.easeOut',
-      onComplete: () => t.destroy(),
+      onComplete: () => t.setVisible(false),
     })
   }
 
@@ -706,26 +843,20 @@ class RacingScene extends Phaser.Scene {
   private hitObstacle(ob: Phaser.Physics.Arcade.Sprite): void {
     if (this.state !== 'playing' || !ob.active) return
     const kind = ob.getData('kind') as string
-    if (kind === 'cone') {
+    if (kind === 'pit') {
+      // driving into a work pit jolts the car: it stays on the road, so only
+      // the first contact of each pass counts
+      const hitAt = (ob.getData('hitAt') as number | undefined) ?? -9999
+      if (this.time.now - hitAt < 900) return
+      ob.setData('hitAt', this.time.now)
       this.clean = false
-      this.speed = Math.max(120, this.speed * 0.55)
-      this.cameras.main.shake(110, 0.004)
-      this.burst(ob.x, ob.y, 0xff6a26, 8, 140)
+      this.speed = Math.max(110, this.speed * 0.5)
+      this.cameras.main.shake(150, 0.006)
+      this.burst(ob.x, ob.y, 0x9a9184, 10, 160)
       this.opts.onEvent('bump')
-      const body = ob.body as Phaser.Physics.Arcade.Body
-      body.enable = false
-      this.tweens.add({
-        targets: ob,
-        y: ob.y + 130,
-        x: ob.x + (ob.x < this.player.x ? -50 : 50),
-        angle: 160,
-        alpha: 0,
-        duration: 380,
-        onComplete: () => ob.disableBody(true, true),
-      })
       return
     }
-    // barrier = full crash
+    // road blocker = full crash
     if (this.time.now < this.invulnerableUntil) return
     const x = ob.x
     const y = ob.y
@@ -804,7 +935,10 @@ class RacingScene extends Phaser.Scene {
 
   /* --------------------------------- update --------------------------------- */
   update(_time: number, deltaMs: number): void {
-    const dt = Math.min(deltaMs / 1000, 0.05)
+    // Cap at 100 ms (10 fps) rather than 50 ms: clamping harder made the whole
+    // simulation run in slow motion on devices that hit a rough frame, which
+    // read as "the car slows down when I steer".
+    const dt = Math.min(deltaMs / 1000, 0.1)
     const o = this.opts
     const input = o.input
 
@@ -836,14 +970,37 @@ class RacingScene extends Phaser.Scene {
     if (this.speed < targetSpeed) this.speed = Math.min(targetSpeed, this.speed + rate * dt)
     else this.speed = Math.max(targetSpeed, this.speed - rate * dt)
 
-    const steerSpeed = 315 * o.car.handling * (o.tires ? 1.08 : 1)
-    const vx = (right ? steerSpeed : 0) - (left ? steerSpeed : 0)
+    // Steering used to snap the lateral velocity to ±3150 px/s, which crosses
+    // the whole road in under 0.1 s and then slams into the edge clamp — the
+    // "braking" feeling when holding left/right. Instead the car now eases the
+    // lateral speed towards its target (same response at any frame rate) and
+    // sheds speed as it approaches the verge, so it slides into the edge.
+    // handling is a gameplay multiplier (1.0 – 1.5), so this lands at roughly
+    // 430–650 px/s: the car crosses the 274 px wide road in ~0.4–0.6 s.
+    const steerMax = 430 * o.car.handling * (o.tires ? 1.08 : 1)
+    const steerInput = (right ? 1 : 0) - (left ? 1 : 0)
+    const minX = ROAD_LEFT + 30
+    const maxX = ROAD_RIGHT - 30
+    let targetVx = steerInput * steerMax
+    if (targetVx > 0) targetVx *= Phaser.Math.Clamp((maxX - this.player.x) / 34, 0.25, 1)
+    else if (targetVx < 0) targetVx *= Phaser.Math.Clamp((this.player.x - minX) / 34, 0.25, 1)
     const body = this.player.body as Phaser.Physics.Arcade.Body
-    const smoothed = Phaser.Math.Linear(body.velocity.x, vx, Math.min(1, dt * 10))
-    this.player.setVelocity(smoothed, 0)
+    const steerAccel = (steerInput === 0 ? 3400 : 2600) * o.car.handling
+    const nextVx = body.velocity.x < targetVx
+      ? Math.min(targetVx, body.velocity.x + steerAccel * dt)
+      : Math.max(targetVx, body.velocity.x - steerAccel * dt)
+    const predictedX = this.player.x + nextVx * dt
+    if (predictedX < minX || predictedX > maxX) {
+      this.player.x = Phaser.Math.Clamp(predictedX, minX, maxX)
+      this.player.setVelocity(0, 0)
+    } else {
+      this.player.setVelocity(nextVx, 0)
+    }
     this.player.y = PLAYER_Y
-    this.player.x = Phaser.Math.Clamp(this.player.x, ROAD_LEFT + 30, ROAD_RIGHT - 30)
-    this.player.setAngle(Phaser.Math.Clamp(smoothed * 0.035, -11, 11))
+    // lean into the turn, smoothed independently of the frame rate
+    const targetTilt = Phaser.Math.Clamp((nextVx / steerMax) * 10, -10, 10)
+    this.tilt += (targetTilt - this.tilt) * (1 - Math.exp(-16 * dt))
+    this.player.setAngle(this.tilt)
     this.shieldRing.setPosition(this.player.x, this.player.y)
     if (this.hasShield) {
       this.shieldRing.setScale(1 + Math.sin(this.time.now / 280) * 0.05)
@@ -889,14 +1046,105 @@ class RacingScene extends Phaser.Scene {
     if (o.level && this.distance >= o.level.distance) this.finish(true)
   }
 
+  /** Pull into a neighbouring lane when the car ahead is in the way. */
+  private tryOvertake(car: Phaser.Physics.Arcade.Sprite, cars: Phaser.Physics.Arcade.Sprite[]): void {
+    const now = this.time.now
+    if (now - (car.getData('lastChange') as number) < 1500) return
+    if (Math.abs((car.getData('targetX') as number) - car.x) > 3) return // mid lane change
+    if (car.y > H * 0.5) return // never swerve right in front of the player
+    const lane = car.getData('lane') as number
+    const options = [lane - 1, lane + 1].filter((l) => l >= 0 && l <= 3)
+    Phaser.Utils.Array.Shuffle(options)
+    for (const target of options) {
+      const cx = laneCenter(target)
+      const busy = cars.some((o) => o !== car && Math.abs(o.x - cx) < 54 && Math.abs(o.y - car.y) < 170)
+      if (busy) continue
+      const blocked = this.obstacles.getChildren().some((obj) => {
+        const s = obj as Phaser.Physics.Arcade.Sprite
+        return s.active && Math.abs(s.x - cx) < 58 && Math.abs(s.y - car.y) < 170
+      })
+      if (blocked) continue
+      car.setData('lane', target)
+      car.setData('targetX', cx)
+      car.setData('lastChange', now)
+      return
+    }
+  }
+
   private moveWorld(dt: number): void {
     const t = this.time.now / 1000
-    // traffic
+    // traffic — every bot car watches the one in front of it in its lane, keeps
+    // a bumper's gap and pulls out to overtake when the next lane is clear, so
+    // cars can no longer slide through each other.
+    const cars: Phaser.Physics.Arcade.Sprite[] = []
     this.traffic.getChildren().forEach((obj) => {
       const car = obj as Phaser.Physics.Arcade.Sprite
-      if (!car.active) return
+      if (car.active) cars.push(car)
+    })
+    // front of the screen first: a car behind inherits the speed of the one it
+    // is queuing behind, so the whole line stays ordered
+    cars.sort((a, b) => b.y - a.y)
+
+    for (const car of cars) {
+      const own = car.getData('ownSpeed') as number
+      const wantVy = this.speed - own
+      const len = car.getData('len') as number
+      let vy = wantVy
+
+      // 1. road works sweeping down from above: pull out, or wait behind it —
+      //    the thing is painted on the road, so matching the road speed parks
+      //    the car instead of letting it drive straight through the pit.
+      let works: Phaser.Physics.Arcade.Sprite | null = null
+      let worksGap = Infinity
+      this.obstacles.getChildren().forEach((obj) => {
+        const s = obj as Phaser.Physics.Arcade.Sprite
+        if (!s.active || Math.abs(s.x - car.x) > 46) return
+        const back = car.y - s.y
+        if (back > 0 && back < worksGap) { worksGap = back; works = s }
+      })
+      if (works) {
+        const worksW = works as Phaser.Physics.Arcade.Sprite
+        const clearance = len / 2 + 46
+        if (worksGap < 240) this.tryOvertake(car, cars)
+        if (Math.abs(worksW.x - car.x) < 52 && worksGap < clearance + 60) {
+          vy = this.speed
+          if (worksGap < clearance) car.y = worksW.y + clearance
+        }
+      }
+
+      // 2. the car in front of me in my lane
+      let ahead: Phaser.Physics.Arcade.Sprite | null = null
+      let gap = Infinity
+      for (const other of cars) {
+        if (other === car) continue
+        if (Math.abs(other.x - car.x) > 46) continue // not sharing my lane
+        const dy = other.y - car.y
+        if (dy > 0 && dy < gap) { gap = dy; ahead = other }
+      }
+
+      if (ahead) {
+        const minGap = (len + (ahead.getData('len') as number)) / 2 + 10
+        if (gap < minGap) {
+          // hard floor: never overlap, even after a long frame
+          car.y = ahead.y - minGap
+          gap = minGap
+        }
+        if (gap < minGap + 70) vy = Math.min(vy, ahead.getData('vy') as number)
+        if (gap < minGap + 120 && vy < wantVy - 6) this.tryOvertake(car, cars)
+      }
+
+      car.setData('vy', vy)
+
+      // lateral: ease over into the middle of the lane being entered
+      const targetX = car.getData('targetX') as number
+      let vx = 0
+      if (Math.abs(targetX - car.x) > 1.5) vx = Phaser.Math.Clamp((targetX - car.x) * 6, -150, 150)
+      const lean = Phaser.Math.Clamp(vx * 0.045, -8, 8)
+      car.setAngle(Phaser.Math.Linear(car.angle, lean, 1 - Math.exp(-9 * dt)))
+
       const b = car.body as Phaser.Physics.Arcade.Body
-      if (b.enable) car.setVelocity(0, this.speed - (car.getData('ownSpeed') as number))
+      if (b.enable) car.setVelocity(vx, vy)
+
       if (!car.getData('passed') && this.state === 'playing' && car.y > this.player.y + 76) {
         car.setData('passed', true)
         if (Math.abs(car.x - this.player.x) < 80) {
@@ -906,7 +1154,7 @@ class RacingScene extends Phaser.Scene {
         }
       }
       if (car.y > H + 110) car.disableBody(true, true)
-    })
+    }
     // coins (spin + magnet)
     this.coinsGroup.getChildren().forEach((obj) => {
       const coin = obj as Phaser.Physics.Arcade.Sprite
@@ -960,7 +1208,9 @@ export function createRacingGame(parent: HTMLElement, opts: RacingOptions): Phas
       width: W,
       height: H,
     },
-    render: { antialias: true, roundPixels: false },
+    // MSAA costs a lot of fill rate on mobile GPUs and every sprite is a
+    // pre-rasterised texture, so the edges barely change without it.
+    render: { antialias: false, roundPixels: false, powerPreference: 'high-performance' },
     scene: [scene],
   })
 }

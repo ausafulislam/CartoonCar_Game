@@ -123,7 +123,7 @@ export const CARS: CarDef[] = [
   {
     id: 'rocky',
     name: 'Rocky',
-    tagline: 'Chunky off-roader that shrugs off cones like pebbles.',
+    tagline: 'Chunky off-roader that shrugs off potholes like pebbles.',
     price: 6800,
     hero: '/assets/cars/car-rocky-hero.png',
     body: 0x2f9c93,
@@ -412,7 +412,7 @@ export interface RunResult {
   score: number
   distance: number // metres
   hits: number // crashes
-  clean: boolean // no crashes and no cone bumps
+  clean: boolean // no crashes and no pit hits
   boost: number
 }
 
