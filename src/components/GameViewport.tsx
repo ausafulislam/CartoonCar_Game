@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   ChevronDown,
   ChevronLeft,
@@ -73,10 +73,16 @@ export function GameViewport(props: GameViewportProps) {
   const dialValueRef = useRef<HTMLSpanElement>(null)
   const lastHudRef = useRef<HudState>(IDLE_HUD)
   const lastHudPushRef = useRef(0)
+  // The changing numbers are written straight into the DOM (see applyHud), so
+  // the render loop never triggers a React render while you are driving.
+  const distanceRef = useRef<HTMLSpanElement>(null)
+  const coinRef = useRef<HTMLSpanElement>(null)
+  const scoreRef = useRef<HTMLSpanElement>(null)
+  const progressRef = useRef<HTMLDivElement>(null)
+  const targetRef = useRef<number | null>(props.level?.distance ?? null)
   const lastEngineNormRef = useRef(-1)
   const [paused, setPaused] = useState(false)
   const [result, setResult] = useState<{ raw: RunResult; summary: FinishSummary } | null>(null)
-  const [pressed, setPressed] = useState<TouchInput>({ left: false, right: false, up: false, down: false })
 
   // Every finger that is currently holding a control, keyed by pointer id.
   // One pointer owns exactly one control at a time, so a finger that slides
@@ -85,6 +91,8 @@ export function GameViewport(props: GameViewportProps) {
   const activePointers = useRef<Map<number, keyof TouchInput>>(new Map())
 
   const applyHud = useCallback((h: HudState) => {
+    // Speed dial: the only readout that has to move every frame. Two property
+    // writes, and only when the rounded value actually changes.
     const dial = dialRef.current
     if (dial) {
       const pct = `${Math.round(Math.max(0, Math.min(1, h.speedNorm)) * 100)}%`
@@ -93,6 +101,11 @@ export function GameViewport(props: GameViewportProps) {
         dial.style.setProperty('--speed', pct)
       }
       if (dial.dataset.runState !== h.state) dial.dataset.runState = h.state
+      const label = `Speed ${h.kmh} kilometres per hour`
+      if (dial.dataset.label !== label) {
+        dial.dataset.label = label
+        dial.setAttribute('aria-label', label)
+      }
     }
     const valueEl = dialValueRef.current
     if (valueEl) {
@@ -106,22 +119,54 @@ export function GameViewport(props: GameViewportProps) {
       audio.setEngine(engine)
     }
 
-    const prev = lastHudRef.current
-    const structural = h.state !== prev.state || h.hits !== prev.hits ||
-      h.maxHits !== prev.maxHits || h.shield !== prev.shield || h.target !== prev.target
+    // Text readouts: ~11 writes/second is plenty and keeps the page from
+    // recalculating layout on every animation frame.
     const now = performance.now()
-    if (structural || now - lastHudPushRef.current >= 110) {
+    if (now - lastHudPushRef.current >= 90) {
       lastHudPushRef.current = now
+      const target = targetRef.current
+      if (distanceRef.current) {
+        distanceRef.current.textContent = target
+          ? `${fmt(h.distance)} / ${fmt(target)} m`
+          : `${fmt(h.distance)} m`
+      }
+      if (coinRef.current && coinRef.current.textContent !== String(h.coins)) {
+        coinRef.current.textContent = String(h.coins)
+      }
+      if (scoreRef.current) {
+        const score = fmt(h.score)
+        if (scoreRef.current.textContent !== score) scoreRef.current.textContent = score
+      }
+      if (progressRef.current && target) {
+        progressRef.current.style.setProperty('--progress', String(Math.min(1, h.distance / target)))
+      }
+    }
+
+    // Only genuine state changes go through React (hearts, shield, run state).
+    const prev = lastHudRef.current
+    if (h.state !== prev.state || h.hits !== prev.hits || h.maxHits !== prev.maxHits || h.shield !== prev.shield) {
       lastHudRef.current = h
       setHud(h)
     }
   }, [])
 
+  // Fingers only touch the pressed look of a pad — flipping a class here keeps
+  // React out of the gesture entirely. A render on every steering press was
+  // showing up as a one-frame hitch exactly when you tapped left or right.
+  const padRefs = useRef<Partial<Record<keyof TouchInput, HTMLButtonElement | null>>>({})
+  const paintPad = useCallback((key: keyof TouchInput, on: boolean) => {
+    const el = padRefs.current[key]
+    if (!el || el.classList.contains('is-down') === on) return
+    el.classList.toggle('is-down', on)
+    el.setAttribute('aria-pressed', on ? 'true' : 'false')
+  }, [])
+
   const setInput = useCallback((key: keyof TouchInput, value: boolean) => {
     // Mutate the object the racing scene holds a reference to — never replace it.
+    if (inputRef.current[key] === value) return
     inputRef.current[key] = value
-    setPressed((p) => (p[key] === value ? p : { ...p, [key]: value }))
-  }, [])
+    paintPad(key, value)
+  }, [paintPad])
 
   // Haptics fire on the next tick: calling vibrate() synchronously inside
   // pointerdown interrupts the touch sequence on a few Android builds.
@@ -161,10 +206,11 @@ export function GameViewport(props: GameViewportProps) {
     inputRef.current.right = false
     inputRef.current.up = false
     inputRef.current.down = false
-    setPressed((p) => (p.left || p.right || p.up || p.down
-      ? { left: false, right: false, up: false, down: false }
-      : p))
-  }, [])
+    paintPad('left', false)
+    paintPad('right', false)
+    paintPad('up', false)
+    paintPad('down', false)
+  }, [paintPad])
 
   const controlOf = (el: Element | null): keyof TouchInput | null => {
     const hit = el?.closest('[data-control]')
@@ -341,7 +387,6 @@ export function GameViewport(props: GameViewportProps) {
     audio.startEngine()
   }
 
-  const progressPct = hud.target ? Math.min(100, (hud.distance / hud.target) * 100) : 0
   const healthLeft = hud.maxHits - hud.hits
   const levelName = props.level ? `Level ${props.level.id} · ${props.level.name}` : 'Endless Mode'
 
@@ -363,23 +408,19 @@ export function GameViewport(props: GameViewportProps) {
           <div className="objective">
             <div className="objective-label">
               <Flag size={14} />
-              {hud.target
-                ? `${fmt(hud.distance)} / ${fmt(hud.target)} m`
-                : `${fmt(hud.distance)} m`}
+              <span ref={distanceRef}>{targetRef.current ? `0 / ${fmt(targetRef.current)} m` : '0 m'}</span>
             </div>
             <div className="objective-bar">
-              {hud.target
-                ? <div className="objective-fill" style={{ '--progress': progressPct / 100 } as CSSProperties} />
-                : <div className="objective-fill endless-fill" />}
+              <div className={`objective-fill ${targetRef.current ? '' : 'endless-fill'}`} ref={progressRef} />
             </div>
           </div>
           <div className="hud-pill coin-pill slim">
             <span className="pill-icon gold"><Coins size={17} strokeWidth={2.6} /></span>
-            <span className="pill-value">{hud.coins}</span>
+            <span className="pill-value" ref={coinRef}>0</span>
           </div>
         </div>
         <div className="game-hud-row">
-          <span className="score-chip">Score {fmt(hud.score)}</span>
+          <span className="score-chip">Score <span ref={scoreRef}>0</span></span>
           <span className="health-chip" aria-label={`${healthLeft} of ${hud.maxHits} lives left in this run`}>
             {[0, 1, 2].map((i) => (
               <Heart
@@ -405,20 +446,22 @@ export function GameViewport(props: GameViewportProps) {
           <div className="deck-group steer-pad" role="group" aria-label="Steering">
             <button
               type="button"
-              className={`pad-btn pad-steer ${pressed.left ? 'is-down' : ''}`}
+              ref={(el) => { padRefs.current.left = el }}
+              className="pad-btn pad-steer"
               data-control="left"
               aria-label="Steer left"
-              aria-pressed={pressed.left}
+              aria-pressed={false}
             >
               <ChevronLeft size={30} strokeWidth={3.2} />
               <span className="pad-label">LEFT</span>
             </button>
             <button
               type="button"
-              className={`pad-btn pad-steer ${pressed.right ? 'is-down' : ''}`}
+              ref={(el) => { padRefs.current.right = el }}
+              className="pad-btn pad-steer"
               data-control="right"
               aria-label="Steer right"
-              aria-pressed={pressed.right}
+              aria-pressed={false}
             >
               <ChevronRight size={30} strokeWidth={3.2} />
               <span className="pad-label">RIGHT</span>
@@ -442,20 +485,22 @@ export function GameViewport(props: GameViewportProps) {
           <div className="deck-group pedal-pad" role="group" aria-label="Pedals">
             <button
               type="button"
-              className={`pad-btn pad-brake ${pressed.down ? 'is-down' : ''}`}
+              ref={(el) => { padRefs.current.down = el }}
+              className="pad-btn pad-brake"
               data-control="down"
               aria-label="Brake"
-              aria-pressed={pressed.down}
+              aria-pressed={false}
             >
               <ChevronDown size={20} strokeWidth={3.2} />
               <span className="pad-label">BRAKE</span>
             </button>
             <button
               type="button"
-              className={`pad-btn pad-gas ${pressed.up ? 'is-down' : ''}`}
+              ref={(el) => { padRefs.current.up = el }}
+              className="pad-btn pad-gas"
               data-control="up"
               aria-label="Accelerate"
-              aria-pressed={pressed.up}
+              aria-pressed={false}
             >
               <Gauge size={24} strokeWidth={2.6} />
               <span className="pad-label">GAS</span>

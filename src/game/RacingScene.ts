@@ -102,6 +102,7 @@ class RacingScene extends Phaser.Scene {
   private countText!: Phaser.GameObjects.Text
 
   private speed = 0
+  private tilt = 0
   private distance = 0
   private coinsCollected = 0
   private nearMisses = 0
@@ -383,6 +384,7 @@ class RacingScene extends Phaser.Scene {
     this.state = 'countdown'
     this.speed = 0
     this.distance = 0
+    this.tilt = 0
     this.coinsCollected = 0
     this.nearMisses = 0
     this.hits = 0
@@ -598,39 +600,62 @@ class RacingScene extends Phaser.Scene {
   }
 
   /* ----------------------------- interactions ----------------------------- */
+  // One emitter per tint, created once and re-used. Creating (and tearing down)
+  // a particle emitter for every coin picked up was allocating a game object,
+  // a timer and a GPU batch several times a second — a classic source of
+  // micro-stutter on phones.
+  private sparkEmitters = new Map<number, Phaser.GameObjects.Particles.ParticleEmitter>()
+
   private burst(x: number, y: number, tint: number, count: number, speed = 130): void {
-    const emitter = this.add.particles(x, y, 'spark', {
-      speed: { min: speed * 0.3, max: speed },
-      lifespan: 420,
-      quantity: count,
-      scale: { start: 0.85, end: 0 },
-      tint,
-      emitting: false,
-    })
-    emitter.setDepth(15)
+    let emitter = this.sparkEmitters.get(tint)
+    if (!emitter) {
+      emitter = this.add
+        .particles(0, 0, 'spark', {
+          speed: { min: speed * 0.3, max: speed },
+          lifespan: 420,
+          scale: { start: 0.85, end: 0 },
+          tint,
+          emitting: false,
+        })
+        .setDepth(15)
+      this.sparkEmitters.set(tint, emitter)
+    }
     emitter.explode(count, x, y)
-    this.time.delayedCall(600, () => emitter.destroy())
   }
 
+  // A single floating label re-used for every pickup / near miss. Creating a
+  // Phaser Text per event re-rasterises a canvas and uploads a new GPU texture
+  // each time, which hitches badly during coin chains.
+  private pickupLabel?: Phaser.GameObjects.Text
+
   private floatText(x: number, y: number, label: string, color = '#ffd93d'): void {
-    const t = this.add
-      .text(x, y, label, {
-        fontFamily: 'Fredoka, "Trebuchet MS", sans-serif',
-        fontSize: '22px',
-        fontStyle: 'bold',
-        color,
-        stroke: '#5b4a00',
-        strokeThickness: 4,
-      })
-      .setOrigin(0.5)
-      .setDepth(16)
+    if (!this.pickupLabel) {
+      this.pickupLabel = this.add
+        .text(0, 0, label, {
+          fontFamily: 'Fredoka, "Trebuchet MS", sans-serif',
+          fontSize: '22px',
+          fontStyle: 'bold',
+          color,
+          stroke: '#5b4a00',
+          strokeThickness: 4,
+        })
+        .setOrigin(0.5)
+        .setDepth(16)
+    }
+    const t = this.pickupLabel
+    // setText/setColor skip their canvas re-render when the value is unchanged,
+    // so a stream of "+1" labels costs almost nothing.
+    if (t.text !== label) t.setText(label)
+    if (t.style.color !== color) t.setColor(color)
+    this.tweens.killTweensOf(t)
+    t.setPosition(x, y).setAlpha(1).setVisible(true)
     this.tweens.add({
       targets: t,
       y: y - 46,
       alpha: 0,
       duration: 650,
       ease: 'Quad.easeOut',
-      onComplete: () => t.destroy(),
+      onComplete: () => t.setVisible(false),
     })
   }
 
@@ -839,14 +864,37 @@ class RacingScene extends Phaser.Scene {
     if (this.speed < targetSpeed) this.speed = Math.min(targetSpeed, this.speed + rate * dt)
     else this.speed = Math.max(targetSpeed, this.speed - rate * dt)
 
-    const steerSpeed = 315 * o.car.handling * (o.tires ? 1.08 : 1)
-    const vx = (right ? steerSpeed : 0) - (left ? steerSpeed : 0)
+    // Steering used to snap the lateral velocity to ±3150 px/s, which crosses
+    // the whole road in under 0.1 s and then slams into the edge clamp — the
+    // "braking" feeling when holding left/right. Instead the car now eases the
+    // lateral speed towards its target (same response at any frame rate) and
+    // sheds speed as it approaches the verge, so it slides into the edge.
+    // handling is a gameplay multiplier (1.0 – 1.5), so this lands at roughly
+    // 430–650 px/s: the car crosses the 274 px wide road in ~0.4–0.6 s.
+    const steerMax = 430 * o.car.handling * (o.tires ? 1.08 : 1)
+    const steerInput = (right ? 1 : 0) - (left ? 1 : 0)
+    const minX = ROAD_LEFT + 30
+    const maxX = ROAD_RIGHT - 30
+    let targetVx = steerInput * steerMax
+    if (targetVx > 0) targetVx *= Phaser.Math.Clamp((maxX - this.player.x) / 34, 0.25, 1)
+    else if (targetVx < 0) targetVx *= Phaser.Math.Clamp((this.player.x - minX) / 34, 0.25, 1)
     const body = this.player.body as Phaser.Physics.Arcade.Body
-    const smoothed = Phaser.Math.Linear(body.velocity.x, vx, Math.min(1, dt * 10))
-    this.player.setVelocity(smoothed, 0)
+    const steerAccel = (steerInput === 0 ? 3400 : 2600) * o.car.handling
+    const nextVx = body.velocity.x < targetVx
+      ? Math.min(targetVx, body.velocity.x + steerAccel * dt)
+      : Math.max(targetVx, body.velocity.x - steerAccel * dt)
+    const predictedX = this.player.x + nextVx * dt
+    if (predictedX < minX || predictedX > maxX) {
+      this.player.x = Phaser.Math.Clamp(predictedX, minX, maxX)
+      this.player.setVelocity(0, 0)
+    } else {
+      this.player.setVelocity(nextVx, 0)
+    }
     this.player.y = PLAYER_Y
-    this.player.x = Phaser.Math.Clamp(this.player.x, ROAD_LEFT + 30, ROAD_RIGHT - 30)
-    this.player.setAngle(Phaser.Math.Clamp(smoothed * 0.035, -11, 11))
+    // lean into the turn, smoothed independently of the frame rate
+    const targetTilt = Phaser.Math.Clamp((nextVx / steerMax) * 10, -10, 10)
+    this.tilt += (targetTilt - this.tilt) * (1 - Math.exp(-16 * dt))
+    this.player.setAngle(this.tilt)
     this.shieldRing.setPosition(this.player.x, this.player.y)
     if (this.hasShield) {
       this.shieldRing.setScale(1 + Math.sin(this.time.now / 280) * 0.05)
