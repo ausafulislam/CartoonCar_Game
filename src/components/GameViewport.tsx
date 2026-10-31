@@ -91,11 +91,25 @@ export function GameViewport(props: GameViewportProps) {
   const activePointers = useRef<Map<number, keyof TouchInput>>(new Map())
 
   const applyHud = useCallback((h: HudState) => {
-    // Speed dial: the only readout that has to move every frame. Two property
-    // writes, and only when the rounded value actually changes.
+    // Engine note follows the speed closely — it is an AudioParam ramp, no DOM.
+    const engine = h.state === 'playing' ? h.speedNorm : 0
+    if (Math.abs(engine - lastEngineNormRef.current) > 0.02) {
+      lastEngineNormRef.current = engine
+      audio.setEngine(engine)
+    }
+
+    // Everything visual is throttled to ~11 Hz. The conic-gradient dial and the
+    // text readouts both have to be re-painted when they change, and doing that
+    // on every animation frame competes with the canvas for the main thread.
+    const now = performance.now()
+    if (now - lastHudPushRef.current < 90) return
+    lastHudPushRef.current = now
+
     const dial = dialRef.current
     if (dial) {
-      const pct = `${Math.round(Math.max(0, Math.min(1, h.speedNorm)) * 100)}%`
+      // quantised to 2% steps: the gradient repaints far less often for a
+      // difference the eye cannot resolve on a 70 px ring
+      const pct = `${Math.round(Math.max(0, Math.min(1, h.speedNorm)) * 50) * 2}%`
       if (dial.dataset.speed !== pct) {
         dial.dataset.speed = pct
         dial.style.setProperty('--speed', pct)
@@ -113,33 +127,21 @@ export function GameViewport(props: GameViewportProps) {
       if (valueEl.textContent !== kmh) valueEl.textContent = kmh
     }
 
-    const engine = h.state === 'playing' ? h.speedNorm : 0
-    if (Math.abs(engine - lastEngineNormRef.current) > 0.02) {
-      lastEngineNormRef.current = engine
-      audio.setEngine(engine)
+    const target = targetRef.current
+    if (distanceRef.current) {
+      distanceRef.current.textContent = target
+        ? `${fmt(h.distance)} / ${fmt(target)} m`
+        : `${fmt(h.distance)} m`
     }
-
-    // Text readouts: ~11 writes/second is plenty and keeps the page from
-    // recalculating layout on every animation frame.
-    const now = performance.now()
-    if (now - lastHudPushRef.current >= 90) {
-      lastHudPushRef.current = now
-      const target = targetRef.current
-      if (distanceRef.current) {
-        distanceRef.current.textContent = target
-          ? `${fmt(h.distance)} / ${fmt(target)} m`
-          : `${fmt(h.distance)} m`
-      }
-      if (coinRef.current && coinRef.current.textContent !== String(h.coins)) {
-        coinRef.current.textContent = String(h.coins)
-      }
-      if (scoreRef.current) {
-        const score = fmt(h.score)
-        if (scoreRef.current.textContent !== score) scoreRef.current.textContent = score
-      }
-      if (progressRef.current && target) {
-        progressRef.current.style.setProperty('--progress', String(Math.min(1, h.distance / target)))
-      }
+    if (coinRef.current && coinRef.current.textContent !== String(h.coins)) {
+      coinRef.current.textContent = String(h.coins)
+    }
+    if (scoreRef.current) {
+      const score = fmt(h.score)
+      if (scoreRef.current.textContent !== score) scoreRef.current.textContent = score
+    }
+    if (progressRef.current && target) {
+      progressRef.current.style.setProperty('--progress', String(Math.min(1, h.distance / target)))
     }
 
     // Only genuine state changes go through React (hearts, shield, run state).
@@ -169,9 +171,15 @@ export function GameViewport(props: GameViewportProps) {
   }, [paintPad])
 
   // Haptics fire on the next tick: calling vibrate() synchronously inside
-  // pointerdown interrupts the touch sequence on a few Android builds.
+  // pointerdown interrupts the touch sequence on a few Android builds. They are
+  // also rate limited — the vibrator service is an inter-process call, and one
+  // per pad tap is enough to cost a frame on some phones.
+  const lastBuzzRef = useRef(0)
   const buzz = useCallback((ms: number) => {
     if (!propsRef.current.vibration || !('vibrate' in navigator)) return
+    const now = performance.now()
+    if (now - lastBuzzRef.current < 140) return
+    lastBuzzRef.current = now
     setTimeout(() => navigator.vibrate?.(ms), 0)
   }, [])
 
@@ -221,7 +229,10 @@ export function GameViewport(props: GameViewportProps) {
   // Pad boxes are measured once per gesture instead of hit-testing the DOM on
   // every pointermove — elementFromPoint() forces a style/layout flush and was
   // stuttering the game while a finger was being dragged.
+  // Paint the deck with a layer of its own so a pressed pad (or the dial) can
+  // never force the canvas underneath to be re-composited.
   const padBoxesRef = useRef<{ key: keyof TouchInput; left: number; right: number; top: number; bottom: number }[]>([])
+  const padBoxesStaleRef = useRef(true)
   const refreshPadBoxes = useCallback(() => {
     padBoxesRef.current = Array.from(document.querySelectorAll<HTMLElement>('[data-control]')).map((el) => {
       const r = el.getBoundingClientRect()
@@ -230,7 +241,13 @@ export function GameViewport(props: GameViewportProps) {
         left: r.left, right: r.right, top: r.top, bottom: r.bottom,
       }
     })
+    padBoxesStaleRef.current = false
   }, [])
+  const measurePads = useCallback(() => {
+    // getBoundingClientRect() flushes pending layout, so only measure when the
+    // layout can actually have changed — never inside a press.
+    if (padBoxesStaleRef.current) refreshPadBoxes()
+  }, [refreshPadBoxes])
   const controlAtPoint = (x: number, y: number): keyof TouchInput | null => {
     const slack = 8 // a little forgiveness for finger roll at the pad edges
     for (const b of padBoxesRef.current) {
@@ -247,7 +264,7 @@ export function GameViewport(props: GameViewportProps) {
    * below always see the release.
    */
   const onDeckPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    refreshPadBoxes()
+    measurePads()
     const key = controlOf(e.target as Element | null) ?? controlAtPoint(e.clientX, e.clientY)
     if (!key) return
     e.preventDefault()
@@ -270,7 +287,7 @@ export function GameViewport(props: GameViewportProps) {
     window.addEventListener('pointerup', onUp, true)
     window.addEventListener('pointercancel', onUp, true)
     window.addEventListener('pointermove', onMove, { capture: true, passive: true })
-    const onResize = () => refreshPadBoxes()
+    const onResize = () => { padBoxesStaleRef.current = true }
     window.addEventListener('blur', releaseAll)
     window.addEventListener('resize', onResize)
     window.addEventListener('orientationchange', onResize)
@@ -292,8 +309,10 @@ export function GameViewport(props: GameViewportProps) {
     }
   }, [pressPointer, releasePointer, releaseAll, refreshPadBoxes])
 
-  // Pausing or finishing a run must drop the throttle immediately.
+  // Pausing or finishing a run must drop the throttle immediately, and the deck
+  // moves around when an overlay appears, so the cached pad boxes go stale.
   useEffect(() => {
+    padBoxesStaleRef.current = true
     if (paused || result) releaseAll()
   }, [paused, result, releaseAll])
 

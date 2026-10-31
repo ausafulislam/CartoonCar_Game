@@ -1011,7 +1011,9 @@ export function createRacingGame(parent: HTMLElement, opts: RacingOptions): Phas
       width: W,
       height: H,
     },
-    render: { antialias: true, roundPixels: false },
+    // MSAA costs a lot of fill rate on mobile GPUs and every sprite is a
+    // pre-rasterised texture, so the edges barely change without it.
+    render: { antialias: false, roundPixels: false, powerPreference: 'high-performance' },
     scene: [scene],
   })
 }
