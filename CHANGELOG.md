@@ -14,7 +14,9 @@ of the in-game **Settings** screen.
 - **Road works replaced single obstacles.** A road blocker now arrives with the
   construction site it is guarding: a freshly dug pit with a spoil ring, cut asphalt
   edge, warning tape and rubble behind it. Open pits also show up on their own.
-- **Traffic cones removed** from the road entirely, including the standalone hazards.
+- **Lone traffic cones are gone.** Cones no longer spawn on their own in the middle of
+  the road; they now only ever appear as part of a road-works site — fencing the
+  blocker and standing around the open pit — so every cone you see means something.
 - Blockers are a full crash (a life); pits jolt the car, cut its speed and spoil the
   clean run without costing a life.
 - Coin chains no longer spawn over a blocked lane.

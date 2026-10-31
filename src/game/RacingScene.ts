@@ -139,6 +139,32 @@ class RacingScene extends Phaser.Scene {
     g.destroy()
   }
 
+  /**
+   * A traffic cone with its base at (x, y). Cones are only ever drawn *into* a
+   * road-works texture (the blocker and the pit), so they always arrive as part
+   * of a construction site and never as a lone obstacle on the road.
+   */
+  private drawCone(g: Phaser.GameObjects.Graphics, x: number, y: number, s = 1): void {
+    g.fillStyle(0x000000, 0.2)
+    g.fillEllipse(x, y - 1 * s, 24 * s, 7 * s)
+    g.fillStyle(0xd9541b, 1)
+    g.fillRoundedRect(x - 11 * s, y - 5 * s, 22 * s, 5 * s, 2 * s)
+    g.fillStyle(0xff6a26, 1)
+    g.fillTriangle(x, y - 30 * s, x - 8.5 * s, y - 4 * s, x + 8.5 * s, y - 4 * s)
+    g.fillStyle(0xffffff, 1)
+    g.fillPoints(
+      [
+        { x: x - 5.4 * s, y: y - 17 * s },
+        { x: x + 5.4 * s, y: y - 17 * s },
+        { x: x + 7 * s, y: y - 11.5 * s },
+        { x: x - 7 * s, y: y - 11.5 * s },
+      ],
+      true,
+    )
+    g.fillStyle(0xffb27a, 0.5)
+    g.fillTriangle(x - 1.4 * s, y - 26 * s, x - 3.2 * s, y - 8 * s, x - 1.4 * s, y - 8 * s)
+  }
+
   private makeSmallTextures(): void {
     if (!this.textures.exists('coin')) {
       const g = this.add.graphics()
@@ -165,19 +191,22 @@ class RacingScene extends Phaser.Scene {
       g.destroy()
     }
     if (!this.textures.exists('barrier')) {
+      // The blocker as it looks on a real closed lane: the striped barrier with
+      // cones fencing off either side of it.
       const g = this.add.graphics()
+      const ox = 18
       g.fillStyle(0x000000, 0.16)
-      g.fillEllipse(44, 32, 80, 9)
+      g.fillEllipse(44 + ox, 32, 80, 9)
       g.fillStyle(0x8a93a3, 1)
-      g.fillRect(6, 12, 7, 20)
-      g.fillRect(75, 12, 7, 20)
+      g.fillRect(6 + ox, 12, 7, 20)
+      g.fillRect(75 + ox, 12, 7, 20)
       g.fillStyle(0xf4f6fa, 1)
-      g.fillRoundedRect(2, 2, 84, 20, 5)
+      g.fillRoundedRect(2 + ox, 2, 84, 20, 5)
       g.lineStyle(2, 0xb9c2d1, 1)
-      g.strokeRoundedRect(2, 2, 84, 20, 5)
+      g.strokeRoundedRect(2 + ox, 2, 84, 20, 5)
       g.fillStyle(0xe6352b, 1)
       for (let i = 0; i < 4; i++) {
-        const x = 8 + i * 21
+        const x = 8 + ox + i * 21
         g.fillPoints(
           [
             { x, y: 20 },
@@ -188,52 +217,61 @@ class RacingScene extends Phaser.Scene {
           true,
         )
       }
-      g.generateTexture('barrier', 88, 36)
+      this.drawCone(g, 11, 50)
+      this.drawCone(g, 113, 47, 0.92)
+      g.generateTexture('barrier', 124, 56)
       g.destroy()
     }
     if (!this.textures.exists('pit')) {
       // An open construction pit cut into the asphalt: sandy spoil ring, darker
       // cut edge, a black shaft with a lit far wall, rubble on the floor and
-      // warning tape across the near lip.
+      // warning tape across the near lip — with cones standing around the cut,
+      // exactly like a real site.
       const g = this.add.graphics()
+      const ox = 16
+      const oy = 10
       g.fillStyle(0x000000, 0.22)
-      g.fillEllipse(44, 86, 72, 12)
+      g.fillEllipse(44 + ox, 86 + oy, 72, 12)
       // dug-up spoil outside the cut
       g.fillStyle(0x9c8a6f, 1)
-      g.fillRoundedRect(0, 0, 88, 88, 18)
+      g.fillRoundedRect(0 + ox, 0 + oy, 88, 88, 18)
       g.fillStyle(0xb3a184, 1)
-      g.fillCircle(10, 30, 6)
-      g.fillCircle(78, 44, 5)
-      g.fillCircle(16, 62, 4)
-      g.fillCircle(72, 14, 4)
+      g.fillCircle(10 + ox, 30 + oy, 6)
+      g.fillCircle(78 + ox, 44 + oy, 5)
+      g.fillCircle(16 + ox, 62 + oy, 4)
+      g.fillCircle(72 + ox, 14 + oy, 4)
       // cut asphalt edge
       g.fillStyle(0x4a453f, 1)
-      g.fillRoundedRect(6, 6, 76, 76, 14)
+      g.fillRoundedRect(6 + ox, 6 + oy, 76, 76, 14)
       g.fillStyle(0x38332e, 1)
-      g.fillRoundedRect(10, 10, 68, 68, 11)
+      g.fillRoundedRect(10 + ox, 10 + oy, 68, 68, 11)
       // the shaft
       g.fillStyle(0x121110, 1)
-      g.fillRoundedRect(14, 14, 60, 60, 9)
+      g.fillRoundedRect(14 + ox, 14 + oy, 60, 60, 9)
       // lit far wall (top) then a darker band so it reads as depth
       g.fillStyle(0x554e45, 1)
-      g.fillRoundedRect(14, 14, 60, 11, 8)
+      g.fillRoundedRect(14 + ox, 14 + oy, 60, 11, 8)
       g.fillStyle(0x2c2824, 1)
-      g.fillRoundedRect(14, 22, 60, 7, 5)
+      g.fillRoundedRect(14 + ox, 22 + oy, 60, 7, 5)
       g.fillStyle(0x241f1b, 1)
-      g.fillRoundedRect(18, 60, 52, 12, 6)
+      g.fillRoundedRect(18 + ox, 60 + oy, 52, 12, 6)
       // rubble on the floor
       g.fillStyle(0x6f675b, 1)
-      g.fillCircle(32, 56, 5)
-      g.fillCircle(50, 64, 4)
-      g.fillCircle(40, 68, 3)
+      g.fillCircle(32 + ox, 56 + oy, 5)
+      g.fillCircle(50 + ox, 64 + oy, 4)
+      g.fillCircle(40 + ox, 68 + oy, 3)
       g.fillStyle(0x9a9184, 1)
-      g.fillCircle(58, 40, 3)
+      g.fillCircle(58 + ox, 40 + oy, 3)
       // warning tape across the near lip
       g.fillStyle(0xffb31f, 1)
-      g.fillRoundedRect(13, 78, 62, 8, 3)
+      g.fillRoundedRect(13 + ox, 78 + oy, 62, 8, 3)
       g.fillStyle(0x2b2b2b, 1)
-      for (let i = 0; i < 4; i++) g.fillRect(18 + i * 15, 78, 7, 8)
-      g.generateTexture('pit', 88, 88)
+      for (let i = 0; i < 4; i++) g.fillRect(18 + ox + i * 15, 78 + oy, 7, 8)
+      // cones standing around the hole
+      this.drawCone(g, 12, 46)
+      this.drawCone(g, 108, 58, 0.92)
+      this.drawCone(g, 26, 108, 1.02)
+      g.generateTexture('pit', 120, 112)
       g.destroy()
     }
     if (!this.textures.exists('spark')) {
@@ -633,8 +671,15 @@ class RacingScene extends Phaser.Scene {
     ob.setAlpha(1)
     ob.setData('kind', kind)
     const body = ob.body as Phaser.Physics.Arcade.Body
-    if (kind === 'barrier') body.setSize(80, 24)
-    else body.setSize(64, 66)
+    if (kind === 'barrier') {
+      // hitbox = the striped bar only; the cones either side are decoration
+      body.setSize(80, 24)
+      body.setOffset(22, 0)
+    } else {
+      // hitbox = the open cut; the spoil ring and the cones don't crash you
+      body.setSize(64, 66)
+      body.setOffset(28, 21)
+    }
     return ob
   }
 
