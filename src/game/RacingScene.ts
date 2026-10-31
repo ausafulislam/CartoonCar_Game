@@ -164,27 +164,6 @@ class RacingScene extends Phaser.Scene {
       g.generateTexture('coin', 36, 36)
       g.destroy()
     }
-    if (!this.textures.exists('cone')) {
-      const g = this.add.graphics()
-      g.fillStyle(0x000000, 0.18)
-      g.fillEllipse(20, 40, 34, 9)
-      g.fillStyle(0xc2511f, 1)
-      g.fillRoundedRect(4, 34, 32, 8, 3)
-      g.fillStyle(0xff6a26, 1)
-      g.fillTriangle(20, 2, 8, 36, 32, 36)
-      g.fillStyle(0xffffff, 1)
-      g.fillPoints(
-        [
-          { x: 14.5, y: 20 },
-          { x: 25.5, y: 20 },
-          { x: 28, y: 27 },
-          { x: 12, y: 27 },
-        ],
-        true,
-      )
-      g.generateTexture('cone', 40, 44)
-      g.destroy()
-    }
     if (!this.textures.exists('barrier')) {
       const g = this.add.graphics()
       g.fillStyle(0x000000, 0.16)
@@ -622,29 +601,27 @@ class RacingScene extends Phaser.Scene {
   private spawnObstacle(): void {
     const lane = this.randomLane()
     if (this.laneBusyAtTop(lane, 190)) return
-    if (Math.random() < 0.34) {
+    // Only construction hazards: the road blocker, either on its own or with
+    // the work pit it is guarding, and the odd open pit on the tarmac.
+    if (Math.random() < 0.6) {
       this.spawnRoadWorks(lane)
       return
     }
-    this.armObstacle(this.obstacles.get(laneCenter(lane), -50, 'cone') as Phaser.Physics.Arcade.Sprite | null, 'cone', laneCenter(lane), -50)
+    const cx = laneCenter(lane)
+    this.armObstacle(this.obstacles.get(cx, -50, 'pit') as Phaser.Physics.Arcade.Sprite | null, 'pit', cx, -50)
   }
 
-  /**
-   * A road blocker, then the construction site it is guarding: a dug pit with
-   * warning tape behind it and cones marking the corners.
-   */
+  /** A road blocker, then the construction pit it is guarding. */
   private spawnRoadWorks(lane: number): void {
-    if (this.laneBusyAtTop(lane, 320)) return
+    if (this.laneBusyAtTop(lane, 300)) return
     const cx = laneCenter(lane)
     this.armObstacle(this.obstacles.get(cx, -50, 'barrier') as Phaser.Physics.Arcade.Sprite | null, 'barrier', cx, -50)
-    this.armObstacle(this.obstacles.get(cx - 33, -134, 'cone') as Phaser.Physics.Arcade.Sprite | null, 'cone', cx - 33, -134)
-    this.armObstacle(this.obstacles.get(cx, -196, 'pit') as Phaser.Physics.Arcade.Sprite | null, 'pit', cx, -196)
-    this.armObstacle(this.obstacles.get(cx + 33, -262, 'cone') as Phaser.Physics.Arcade.Sprite | null, 'cone', cx + 33, -262)
+    this.armObstacle(this.obstacles.get(cx, -186, 'pit') as Phaser.Physics.Arcade.Sprite | null, 'pit', cx, -186)
   }
 
   private armObstacle(
     ob: Phaser.Physics.Arcade.Sprite | null,
-    kind: 'cone' | 'barrier' | 'pit',
+    kind: 'barrier' | 'pit',
     x: number,
     y: number,
   ): Phaser.Physics.Arcade.Sprite | null {
@@ -657,8 +634,7 @@ class RacingScene extends Phaser.Scene {
     ob.setData('kind', kind)
     const body = ob.body as Phaser.Physics.Arcade.Body
     if (kind === 'barrier') body.setSize(80, 24)
-    else if (kind === 'pit') body.setSize(64, 66)
-    else body.setSize(26, 30)
+    else body.setSize(64, 66)
     return ob
   }
 
@@ -812,26 +788,20 @@ class RacingScene extends Phaser.Scene {
   private hitObstacle(ob: Phaser.Physics.Arcade.Sprite): void {
     if (this.state !== 'playing' || !ob.active) return
     const kind = ob.getData('kind') as string
-    if (kind === 'cone') {
+    if (kind === 'pit') {
+      // driving into a work pit jolts the car: it stays on the road, so only
+      // the first contact of each pass counts
+      const hitAt = (ob.getData('hitAt') as number | undefined) ?? -9999
+      if (this.time.now - hitAt < 900) return
+      ob.setData('hitAt', this.time.now)
       this.clean = false
-      this.speed = Math.max(120, this.speed * 0.55)
-      this.cameras.main.shake(110, 0.004)
-      this.burst(ob.x, ob.y, 0xff6a26, 8, 140)
+      this.speed = Math.max(110, this.speed * 0.5)
+      this.cameras.main.shake(150, 0.006)
+      this.burst(ob.x, ob.y, 0x9a9184, 10, 160)
       this.opts.onEvent('bump')
-      const body = ob.body as Phaser.Physics.Arcade.Body
-      body.enable = false
-      this.tweens.add({
-        targets: ob,
-        y: ob.y + 130,
-        x: ob.x + (ob.x < this.player.x ? -50 : 50),
-        angle: 160,
-        alpha: 0,
-        duration: 380,
-        onComplete: () => ob.disableBody(true, true),
-      })
       return
     }
-    // barrier = full crash
+    // road blocker = full crash
     if (this.time.now < this.invulnerableUntil) return
     const x = ob.x
     const y = ob.y
