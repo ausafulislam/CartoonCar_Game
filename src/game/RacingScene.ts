@@ -212,6 +212,51 @@ class RacingScene extends Phaser.Scene {
       g.generateTexture('barrier', 88, 36)
       g.destroy()
     }
+    if (!this.textures.exists('pit')) {
+      // An open construction pit cut into the asphalt: sandy spoil ring, darker
+      // cut edge, a black shaft with a lit far wall, rubble on the floor and
+      // warning tape across the near lip.
+      const g = this.add.graphics()
+      g.fillStyle(0x000000, 0.22)
+      g.fillEllipse(44, 86, 72, 12)
+      // dug-up spoil outside the cut
+      g.fillStyle(0x9c8a6f, 1)
+      g.fillRoundedRect(0, 0, 88, 88, 18)
+      g.fillStyle(0xb3a184, 1)
+      g.fillCircle(10, 30, 6)
+      g.fillCircle(78, 44, 5)
+      g.fillCircle(16, 62, 4)
+      g.fillCircle(72, 14, 4)
+      // cut asphalt edge
+      g.fillStyle(0x4a453f, 1)
+      g.fillRoundedRect(6, 6, 76, 76, 14)
+      g.fillStyle(0x38332e, 1)
+      g.fillRoundedRect(10, 10, 68, 68, 11)
+      // the shaft
+      g.fillStyle(0x121110, 1)
+      g.fillRoundedRect(14, 14, 60, 60, 9)
+      // lit far wall (top) then a darker band so it reads as depth
+      g.fillStyle(0x554e45, 1)
+      g.fillRoundedRect(14, 14, 60, 11, 8)
+      g.fillStyle(0x2c2824, 1)
+      g.fillRoundedRect(14, 22, 60, 7, 5)
+      g.fillStyle(0x241f1b, 1)
+      g.fillRoundedRect(18, 60, 52, 12, 6)
+      // rubble on the floor
+      g.fillStyle(0x6f675b, 1)
+      g.fillCircle(32, 56, 5)
+      g.fillCircle(50, 64, 4)
+      g.fillCircle(40, 68, 3)
+      g.fillStyle(0x9a9184, 1)
+      g.fillCircle(58, 40, 3)
+      // warning tape across the near lip
+      g.fillStyle(0xffb31f, 1)
+      g.fillRoundedRect(13, 78, 62, 8, 3)
+      g.fillStyle(0x2b2b2b, 1)
+      for (let i = 0; i < 4; i++) g.fillRect(18 + i * 15, 78, 7, 8)
+      g.generateTexture('pit', 88, 88)
+      g.destroy()
+    }
     if (!this.textures.exists('spark')) {
       const g = this.add.graphics()
       g.fillStyle(0xffffff, 1)
@@ -544,10 +589,21 @@ class RacingScene extends Phaser.Scene {
     const ramp = this.opts.level === null ? 1 + Math.min(0.3, this.elapsed / 600) : 1
     car.setData('ownSpeed', Phaser.Math.Between(lo, hi) * ramp * (isTruck ? 0.82 : 1))
     car.setData('passed', false)
+    car.setData('lane', lane)
+    car.setData('targetX', laneCenter(lane))
+    car.setData('len', isTruck ? 124 : 94)
+    car.setData('lastChange', -9999)
+    car.setData('vy', 0)
   }
 
   private spawnCoinChain(): void {
     const lane = this.randomLane()
+    const cx = laneCenter(lane)
+    const blocked = this.obstacles.getChildren().some((obj) => {
+      const s = obj as Phaser.Physics.Arcade.Sprite
+      return s.active && Math.abs(s.x - cx) < 54 && s.y < 140
+    })
+    if (blocked) return
     const count = Phaser.Math.Between(4, 6)
     for (let i = 0; i < count; i++) {
       const y = -40 - i * 48
@@ -566,19 +622,44 @@ class RacingScene extends Phaser.Scene {
   private spawnObstacle(): void {
     const lane = this.randomLane()
     if (this.laneBusyAtTop(lane, 190)) return
-    const barrier = Math.random() < 0.32
-    const tex = barrier ? 'barrier' : 'cone'
-    const ob = this.obstacles.get(laneCenter(lane), -50, tex) as Phaser.Physics.Arcade.Sprite | null
-    if (!ob) return
-    ob.setTexture(tex)
-    ob.enableBody(true, laneCenter(lane), -50, true, true)
+    if (Math.random() < 0.34) {
+      this.spawnRoadWorks(lane)
+      return
+    }
+    this.armObstacle(this.obstacles.get(laneCenter(lane), -50, 'cone') as Phaser.Physics.Arcade.Sprite | null, 'cone', laneCenter(lane), -50)
+  }
+
+  /**
+   * A road blocker, then the construction site it is guarding: a dug pit with
+   * warning tape behind it and cones marking the corners.
+   */
+  private spawnRoadWorks(lane: number): void {
+    if (this.laneBusyAtTop(lane, 320)) return
+    const cx = laneCenter(lane)
+    this.armObstacle(this.obstacles.get(cx, -50, 'barrier') as Phaser.Physics.Arcade.Sprite | null, 'barrier', cx, -50)
+    this.armObstacle(this.obstacles.get(cx - 33, -134, 'cone') as Phaser.Physics.Arcade.Sprite | null, 'cone', cx - 33, -134)
+    this.armObstacle(this.obstacles.get(cx, -196, 'pit') as Phaser.Physics.Arcade.Sprite | null, 'pit', cx, -196)
+    this.armObstacle(this.obstacles.get(cx + 33, -262, 'cone') as Phaser.Physics.Arcade.Sprite | null, 'cone', cx + 33, -262)
+  }
+
+  private armObstacle(
+    ob: Phaser.Physics.Arcade.Sprite | null,
+    kind: 'cone' | 'barrier' | 'pit',
+    x: number,
+    y: number,
+  ): Phaser.Physics.Arcade.Sprite | null {
+    if (!ob) return null
+    ob.setTexture(kind)
+    ob.enableBody(true, x, y, true, true)
     ob.setDepth(3)
     ob.setAngle(0)
     ob.setAlpha(1)
-    ob.setData('kind', barrier ? 'barrier' : 'cone')
+    ob.setData('kind', kind)
     const body = ob.body as Phaser.Physics.Arcade.Body
-    if (barrier) body.setSize(80, 24)
+    if (kind === 'barrier') body.setSize(80, 24)
+    else if (kind === 'pit') body.setSize(64, 66)
     else body.setSize(26, 30)
+    return ob
   }
 
   private spawnScenery(y = -80): void {
@@ -940,14 +1021,105 @@ class RacingScene extends Phaser.Scene {
     if (o.level && this.distance >= o.level.distance) this.finish(true)
   }
 
+  /** Pull into a neighbouring lane when the car ahead is in the way. */
+  private tryOvertake(car: Phaser.Physics.Arcade.Sprite, cars: Phaser.Physics.Arcade.Sprite[]): void {
+    const now = this.time.now
+    if (now - (car.getData('lastChange') as number) < 1500) return
+    if (Math.abs((car.getData('targetX') as number) - car.x) > 3) return // mid lane change
+    if (car.y > H * 0.5) return // never swerve right in front of the player
+    const lane = car.getData('lane') as number
+    const options = [lane - 1, lane + 1].filter((l) => l >= 0 && l <= 3)
+    Phaser.Utils.Array.Shuffle(options)
+    for (const target of options) {
+      const cx = laneCenter(target)
+      const busy = cars.some((o) => o !== car && Math.abs(o.x - cx) < 54 && Math.abs(o.y - car.y) < 170)
+      if (busy) continue
+      const blocked = this.obstacles.getChildren().some((obj) => {
+        const s = obj as Phaser.Physics.Arcade.Sprite
+        return s.active && Math.abs(s.x - cx) < 58 && Math.abs(s.y - car.y) < 170
+      })
+      if (blocked) continue
+      car.setData('lane', target)
+      car.setData('targetX', cx)
+      car.setData('lastChange', now)
+      return
+    }
+  }
+
   private moveWorld(dt: number): void {
     const t = this.time.now / 1000
-    // traffic
+    // traffic — every bot car watches the one in front of it in its lane, keeps
+    // a bumper's gap and pulls out to overtake when the next lane is clear, so
+    // cars can no longer slide through each other.
+    const cars: Phaser.Physics.Arcade.Sprite[] = []
     this.traffic.getChildren().forEach((obj) => {
       const car = obj as Phaser.Physics.Arcade.Sprite
-      if (!car.active) return
+      if (car.active) cars.push(car)
+    })
+    // front of the screen first: a car behind inherits the speed of the one it
+    // is queuing behind, so the whole line stays ordered
+    cars.sort((a, b) => b.y - a.y)
+
+    for (const car of cars) {
+      const own = car.getData('ownSpeed') as number
+      const wantVy = this.speed - own
+      const len = car.getData('len') as number
+      let vy = wantVy
+
+      // 1. road works sweeping down from above: pull out, or wait behind it —
+      //    the thing is painted on the road, so matching the road speed parks
+      //    the car instead of letting it drive straight through the pit.
+      let works: Phaser.Physics.Arcade.Sprite | null = null
+      let worksGap = Infinity
+      this.obstacles.getChildren().forEach((obj) => {
+        const s = obj as Phaser.Physics.Arcade.Sprite
+        if (!s.active || Math.abs(s.x - car.x) > 46) return
+        const back = car.y - s.y
+        if (back > 0 && back < worksGap) { worksGap = back; works = s }
+      })
+      if (works) {
+        const worksW = works as Phaser.Physics.Arcade.Sprite
+        const clearance = len / 2 + 46
+        if (worksGap < 240) this.tryOvertake(car, cars)
+        if (Math.abs(worksW.x - car.x) < 52 && worksGap < clearance + 60) {
+          vy = this.speed
+          if (worksGap < clearance) car.y = worksW.y + clearance
+        }
+      }
+
+      // 2. the car in front of me in my lane
+      let ahead: Phaser.Physics.Arcade.Sprite | null = null
+      let gap = Infinity
+      for (const other of cars) {
+        if (other === car) continue
+        if (Math.abs(other.x - car.x) > 46) continue // not sharing my lane
+        const dy = other.y - car.y
+        if (dy > 0 && dy < gap) { gap = dy; ahead = other }
+      }
+
+      if (ahead) {
+        const minGap = (len + (ahead.getData('len') as number)) / 2 + 10
+        if (gap < minGap) {
+          // hard floor: never overlap, even after a long frame
+          car.y = ahead.y - minGap
+          gap = minGap
+        }
+        if (gap < minGap + 70) vy = Math.min(vy, ahead.getData('vy') as number)
+        if (gap < minGap + 120 && vy < wantVy - 6) this.tryOvertake(car, cars)
+      }
+
+      car.setData('vy', vy)
+
+      // lateral: ease over into the middle of the lane being entered
+      const targetX = car.getData('targetX') as number
+      let vx = 0
+      if (Math.abs(targetX - car.x) > 1.5) vx = Phaser.Math.Clamp((targetX - car.x) * 6, -150, 150)
+      const lean = Phaser.Math.Clamp(vx * 0.045, -8, 8)
+      car.setAngle(Phaser.Math.Linear(car.angle, lean, 1 - Math.exp(-9 * dt)))
+
       const b = car.body as Phaser.Physics.Arcade.Body
-      if (b.enable) car.setVelocity(0, this.speed - (car.getData('ownSpeed') as number))
+      if (b.enable) car.setVelocity(vx, vy)
+
       if (!car.getData('passed') && this.state === 'playing' && car.y > this.player.y + 76) {
         car.setData('passed', true)
         if (Math.abs(car.x - this.player.x) < 80) {
@@ -957,7 +1129,7 @@ class RacingScene extends Phaser.Scene {
         }
       }
       if (car.y > H + 110) car.disableBody(true, true)
-    })
+    }
     // coins (spin + magnet)
     this.coinsGroup.getChildren().forEach((obj) => {
       const coin = obj as Phaser.Physics.Arcade.Sprite
