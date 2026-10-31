@@ -63,6 +63,17 @@ export function GameViewport(props: GameViewportProps) {
   propsRef.current = props
 
   const [hud, setHud] = useState<HudState>(IDLE_HUD)
+
+  // The scene pushes HUD values every rendered frame (up to 60x/second). Feeding
+  // all of that straight into React re-rendered this whole component 60x/second,
+  // which is what made the game stutter on phones. Instead the speed dial is
+  // painted imperatively (cheap, needs to be smooth) and the React state is
+  // throttled to a readable ~9 updates/second.
+  const dialRef = useRef<HTMLDivElement>(null)
+  const dialValueRef = useRef<HTMLSpanElement>(null)
+  const lastHudRef = useRef<HudState>(IDLE_HUD)
+  const lastHudPushRef = useRef(0)
+  const lastEngineNormRef = useRef(-1)
   const [paused, setPaused] = useState(false)
   const [result, setResult] = useState<{ raw: RunResult; summary: FinishSummary } | null>(null)
   const [pressed, setPressed] = useState<TouchInput>({ left: false, right: false, up: false, down: false })
@@ -72,6 +83,39 @@ export function GameViewport(props: GameViewportProps) {
   // from GAS to LEFT hands the control over instead of locking both, and two
   // fingers on two pads are completely independent (gas + steering).
   const activePointers = useRef<Map<number, keyof TouchInput>>(new Map())
+
+  const applyHud = useCallback((h: HudState) => {
+    const dial = dialRef.current
+    if (dial) {
+      const pct = `${Math.round(Math.max(0, Math.min(1, h.speedNorm)) * 100)}%`
+      if (dial.dataset.speed !== pct) {
+        dial.dataset.speed = pct
+        dial.style.setProperty('--speed', pct)
+      }
+      if (dial.dataset.runState !== h.state) dial.dataset.runState = h.state
+    }
+    const valueEl = dialValueRef.current
+    if (valueEl) {
+      const kmh = String(h.kmh)
+      if (valueEl.textContent !== kmh) valueEl.textContent = kmh
+    }
+
+    const engine = h.state === 'playing' ? h.speedNorm : 0
+    if (Math.abs(engine - lastEngineNormRef.current) > 0.02) {
+      lastEngineNormRef.current = engine
+      audio.setEngine(engine)
+    }
+
+    const prev = lastHudRef.current
+    const structural = h.state !== prev.state || h.hits !== prev.hits ||
+      h.maxHits !== prev.maxHits || h.shield !== prev.shield || h.target !== prev.target
+    const now = performance.now()
+    if (structural || now - lastHudPushRef.current >= 110) {
+      lastHudPushRef.current = now
+      lastHudRef.current = h
+      setHud(h)
+    }
+  }, [])
 
   const setInput = useCallback((key: keyof TouchInput, value: boolean) => {
     // Mutate the object the racing scene holds a reference to — never replace it.
@@ -128,6 +172,27 @@ export function GameViewport(props: GameViewportProps) {
     return value === 'left' || value === 'right' || value === 'up' || value === 'down' ? value : null
   }
 
+  // Pad boxes are measured once per gesture instead of hit-testing the DOM on
+  // every pointermove — elementFromPoint() forces a style/layout flush and was
+  // stuttering the game while a finger was being dragged.
+  const padBoxesRef = useRef<{ key: keyof TouchInput; left: number; right: number; top: number; bottom: number }[]>([])
+  const refreshPadBoxes = useCallback(() => {
+    padBoxesRef.current = Array.from(document.querySelectorAll<HTMLElement>('[data-control]')).map((el) => {
+      const r = el.getBoundingClientRect()
+      return {
+        key: el.dataset.control as keyof TouchInput,
+        left: r.left, right: r.right, top: r.top, bottom: r.bottom,
+      }
+    })
+  }, [])
+  const controlAtPoint = (x: number, y: number): keyof TouchInput | null => {
+    const slack = 8 // a little forgiveness for finger roll at the pad edges
+    for (const b of padBoxesRef.current) {
+      if (x >= b.left - slack && x <= b.right + slack && y >= b.top - slack && y <= b.bottom + slack) return b.key
+    }
+    return null
+  }
+
   /**
    * Pressing anywhere on the deck starts a control. Deliberately NOT using
    * setPointerCapture: several mobile browsers mis-handle a second captured
@@ -136,7 +201,8 @@ export function GameViewport(props: GameViewportProps) {
    * below always see the release.
    */
   const onDeckPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    const key = controlOf(e.target as Element | null)
+    refreshPadBoxes()
+    const key = controlOf(e.target as Element | null) ?? controlAtPoint(e.clientX, e.clientY)
     if (!key) return
     e.preventDefault()
     pressPointer(e.pointerId, key)
@@ -149,7 +215,7 @@ export function GameViewport(props: GameViewportProps) {
     const onUp = (e: PointerEvent) => releasePointer(e.pointerId)
     const onMove = (e: PointerEvent) => {
       if (!activePointers.current.has(e.pointerId)) return
-      const key = controlOf(document.elementFromPoint(e.clientX, e.clientY))
+      const key = controlAtPoint(e.clientX, e.clientY)
       if (key) pressPointer(e.pointerId, key)
     }
     const onTouchEnd = (e: TouchEvent) => { if (e.touches.length === 0) releaseAll() }
@@ -158,7 +224,10 @@ export function GameViewport(props: GameViewportProps) {
     window.addEventListener('pointerup', onUp, true)
     window.addEventListener('pointercancel', onUp, true)
     window.addEventListener('pointermove', onMove, { capture: true, passive: true })
+    const onResize = () => refreshPadBoxes()
     window.addEventListener('blur', releaseAll)
+    window.addEventListener('resize', onResize)
+    window.addEventListener('orientationchange', onResize)
     document.addEventListener('touchend', onTouchEnd, true)
     document.addEventListener('touchcancel', onTouchEnd, true)
     document.addEventListener('visibilitychange', onVisibility)
@@ -168,12 +237,14 @@ export function GameViewport(props: GameViewportProps) {
       window.removeEventListener('pointercancel', onUp, true)
       window.removeEventListener('pointermove', onMove, true)
       window.removeEventListener('blur', releaseAll)
+      window.removeEventListener('resize', onResize)
+      window.removeEventListener('orientationchange', onResize)
       document.removeEventListener('touchend', onTouchEnd, true)
       document.removeEventListener('touchcancel', onTouchEnd, true)
       document.removeEventListener('visibilitychange', onVisibility)
       document.removeEventListener('gesturestart', stopGesture)
     }
-  }, [pressPointer, releasePointer, releaseAll])
+  }, [pressPointer, releasePointer, releaseAll, refreshPadBoxes])
 
   // Pausing or finishing a run must drop the throttle immediately.
   useEffect(() => {
@@ -216,10 +287,7 @@ export function GameViewport(props: GameViewportProps) {
       shield: propsRef.current.shield,
       tires: propsRef.current.tires,
       input: inputRef.current,
-      onHud: (h) => {
-        setHud(h)
-        audio.setEngine(h.state === 'playing' ? h.speedNorm : 0)
-      },
+      onHud: (h) => applyHud(h),
       onEvent: handleEvent,
       onFinish: (raw) => {
         if (finishedRef.current) return
@@ -301,7 +369,7 @@ export function GameViewport(props: GameViewportProps) {
             </div>
             <div className="objective-bar">
               {hud.target
-                ? <div className="objective-fill" style={{ width: `${progressPct}%` }} />
+                ? <div className="objective-fill" style={{ '--progress': progressPct / 100 } as CSSProperties} />
                 : <div className="objective-fill endless-fill" />}
             </div>
           </div>
@@ -359,12 +427,14 @@ export function GameViewport(props: GameViewportProps) {
 
           <div className="deck-center">
             <div
-              className={`speed-dial ${hud.state}`}
+              className="speed-dial"
+              ref={dialRef}
+              data-run-state={hud.state}
               role="img"
               aria-label={`Speed ${hud.kmh} kilometres per hour`}
-              style={{ '--speed': `${Math.round(Math.max(0, Math.min(1, hud.speedNorm)) * 100)}%` } as CSSProperties}
             >
-              <span className="speed-value">{hud.kmh}</span>
+              {/* written imperatively every frame by applyHud() — never by React */}
+              <span className="speed-value" ref={dialValueRef}>0</span>
               <span className="speed-unit">km/h</span>
             </div>
           </div>

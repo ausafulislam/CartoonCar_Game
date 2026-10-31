@@ -804,7 +804,10 @@ class RacingScene extends Phaser.Scene {
 
   /* --------------------------------- update --------------------------------- */
   update(_time: number, deltaMs: number): void {
-    const dt = Math.min(deltaMs / 1000, 0.05)
+    // Cap at 100 ms (10 fps) rather than 50 ms: clamping harder made the whole
+    // simulation run in slow motion on devices that hit a rough frame, which
+    // read as "the car slows down when I steer".
+    const dt = Math.min(deltaMs / 1000, 0.1)
     const o = this.opts
     const input = o.input
 

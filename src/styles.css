@@ -727,25 +727,34 @@ h1, h2, h3, p { margin-top: 0; }
 .round-btn:active { transform: translateY(2px); }
 .objective {
   flex: 1; min-width: 0;
-  background: rgba(18, 42, 74, 0.62);
+  background: rgba(18, 42, 74, 0.74);
   border: 2px solid rgba(255, 255, 255, 0.5);
   border-radius: 15px;
   padding: 6px 10px 8px;
   color: #ffffff;
-  backdrop-filter: blur(3px);
+  /* No backdrop blur: the HUD sits on top of a canvas that repaints every
+     frame, so blurring it forced a re-blur 60x/second (a big mobile cost). */
 }
 .objective-label { display: flex; align-items: center; gap: 5px; font-weight: 700; font-size: 14px; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5); }
 .objective-bar { height: 11px; background: rgba(255, 255, 255, 0.28); border-radius: 999px; overflow: hidden; margin-top: 4px; }
-.objective-fill { height: 100%; background: linear-gradient(90deg, #8df24d, #2cb81a); border-radius: inherit; transition: width 0.25s linear; }
-.objective-fill.endless-fill { width: 100%; background: linear-gradient(90deg, #d896ff, #9d4dff); }
+/* scaleX instead of width: animating width re-laid out the HUD on every frame
+   (25 layouts/second), while a transform is composited and costs no layout. */
+.objective-fill {
+  height: 100%; width: 100%;
+  background: linear-gradient(90deg, #8df24d, #2cb81a);
+  border-radius: inherit;
+  transform-origin: left center;
+  transform: scaleX(var(--progress, 0));
+  will-change: transform;
+}
+.objective-fill.endless-fill { background: linear-gradient(90deg, #d896ff, #9d4dff); transform: scaleX(1); }
 .game-hud-row { display: flex; justify-content: space-between; align-items: center; margin-top: 7px; }
 .score-chip, .health-chip {
   display: inline-flex; align-items: center; gap: 3px;
-  background: rgba(18, 42, 74, 0.62);
+  background: rgba(18, 42, 74, 0.74);
   border: 2px solid rgba(255, 255, 255, 0.5);
   color: #fff; font-weight: 700; font-size: 14px;
   border-radius: 999px; padding: 4px 12px;
-  backdrop-filter: blur(3px);
 }
 /* ============================ Control deck ============================= */
 /* A dedicated bottom band: steering pad on the left thumb, pedals on the
@@ -822,7 +831,7 @@ h1, h2, h3, p { margin-top: 0; }
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   background:
     radial-gradient(circle at 50% 50%, rgba(11, 29, 52, 0.94) 60%, transparent 61%),
-    conic-gradient(#5be0f0 var(--speed), rgba(255, 255, 255, 0.22) 0);
+    conic-gradient(#5be0f0 var(--speed, 0%), rgba(255, 255, 255, 0.22) 0);
   border: 2px solid rgba(255, 255, 255, 0.6);
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35);
   color: #ffffff;
