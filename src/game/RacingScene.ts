@@ -267,10 +267,11 @@ class RacingScene extends Phaser.Scene {
       g.fillRoundedRect(13 + ox, 78 + oy, 62, 8, 3)
       g.fillStyle(0x2b2b2b, 1)
       for (let i = 0; i < 4; i++) g.fillRect(18 + ox + i * 15, 78 + oy, 7, 8)
-      // cones standing around the hole
-      this.drawCone(g, 12, 46)
-      this.drawCone(g, 108, 58, 0.92)
-      this.drawCone(g, 26, 108, 1.02)
+      // two cones marking the far corners of the cut. Nothing in front of the
+      // hole: the warning tape on the near lip already says "closed", and a cone
+      // standing over it just made the site look cluttered.
+      this.drawCone(g, 11, 44)
+      this.drawCone(g, 109, 44)
       g.generateTexture('pit', 120, 112)
       g.destroy()
     }
@@ -639,13 +640,20 @@ class RacingScene extends Phaser.Scene {
   private spawnObstacle(): void {
     const lane = this.randomLane()
     if (this.laneBusyAtTop(lane, 190)) return
-    // Only construction hazards: the road blocker, either on its own or with
-    // the work pit it is guarding, and the odd open pit on the tarmac.
-    if (Math.random() < 0.6) {
+    // Only construction hazards, and mostly the road blocker on its own: the
+    // tarmac should not feel like a minefield of holes. Roughly 2 in 3 sites is
+    // a plain blocker, 1 in 4 is the blocker with the pit it guards behind it,
+    // and a lone open pit is rare.
+    const roll = Math.random()
+    const cx = laneCenter(lane)
+    if (roll < 0.68) {
+      this.armObstacle(this.obstacles.get(cx, -50, 'barrier') as Phaser.Physics.Arcade.Sprite | null, 'barrier', cx, -50)
+      return
+    }
+    if (roll < 0.92) {
       this.spawnRoadWorks(lane)
       return
     }
-    const cx = laneCenter(lane)
     this.armObstacle(this.obstacles.get(cx, -50, 'pit') as Phaser.Physics.Arcade.Sprite | null, 'pit', cx, -50)
   }
 
