@@ -53,6 +53,10 @@ const ROAD_RIGHT = 392
 const LANE_W = (ROAD_RIGHT - ROAD_LEFT) / 4
 const PLAYER_Y = 604 // sits clear of the touch control deck
 const MAX_HITS = 3
+// Gap between the guarded pit's centre and the blocker's centre at a road-works
+// site: close enough to read as one site, far enough that the two sprites don't
+// overlap and the hitboxes stay separate.
+const WORKS_GAP = 84
 
 const laneCenter = (i: number) => ROAD_LEFT + LANE_W * (i + 0.5)
 
@@ -640,29 +644,27 @@ class RacingScene extends Phaser.Scene {
   private spawnObstacle(): void {
     const lane = this.randomLane()
     if (this.laneBusyAtTop(lane, 190)) return
-    // Only construction hazards, and mostly the road blocker on its own: the
-    // tarmac should not feel like a minefield of holes. Roughly 2 in 3 sites is
-    // a plain blocker, 1 in 4 is the blocker with the pit it guards behind it,
-    // and a lone open pit is rare.
-    const roll = Math.random()
-    const cx = laneCenter(lane)
-    if (roll < 0.68) {
-      this.armObstacle(this.obstacles.get(cx, -50, 'barrier') as Phaser.Physics.Arcade.Sprite | null, 'barrier', cx, -50)
-      return
-    }
-    if (roll < 0.92) {
-      this.spawnRoadWorks(lane)
-      return
-    }
-    this.armObstacle(this.obstacles.get(cx, -50, 'pit') as Phaser.Physics.Arcade.Sprite | null, 'pit', cx, -50)
+    // Every hazard is one road-works site: the blocker standing at the open pit
+    // it guards. The blocker never shows up on its own, and a hole is never left
+    // unguarded — they are placed together, one car length apart.
+    this.spawnRoadWorks(lane)
   }
 
-  /** A road blocker, then the construction pit it is guarding. */
+  /**
+   * One road-works site: the pit, with the blocker at its near lip. Both are
+   * spawned in the same lane, `WORKS_GAP` apart, so they always read as a single
+   * construction site rather than two separate obstacles.
+   */
   private spawnRoadWorks(lane: number): void {
     if (this.laneBusyAtTop(lane, 300)) return
     const cx = laneCenter(lane)
-    this.armObstacle(this.obstacles.get(cx, -50, 'barrier') as Phaser.Physics.Arcade.Sprite | null, 'barrier', cx, -50)
-    this.armObstacle(this.obstacles.get(cx, -186, 'pit') as Phaser.Physics.Arcade.Sprite | null, 'pit', cx, -186)
+    this.armObstacle(this.obstacles.get(cx, -170, 'pit') as Phaser.Physics.Arcade.Sprite | null, 'pit', cx, -170)
+    this.armObstacle(
+      this.obstacles.get(cx, -170 + WORKS_GAP, 'barrier') as Phaser.Physics.Arcade.Sprite | null,
+      'barrier',
+      cx,
+      -170 + WORKS_GAP,
+    )
   }
 
   private armObstacle(

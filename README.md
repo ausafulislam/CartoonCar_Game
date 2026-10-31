@@ -23,16 +23,17 @@ finger anywhere on screen.
 
 **Goal:** drive the full distance to finish a level. Collect coins, dodge traffic
 and the road works. Three crashes end the run — a **road blocker** costs a life,
-driving into an open **construction pit** jolts the car and kills your clean run. Pits are
-rarer than blockers — about one site in three has one — and cones are scenery: they only
-ever appear as part of a road-works site, never on their own and never in front of a hole.
+and slipping past it into the open **construction pit** behind jolts the car and kills your
+clean run. A blocker always comes with its hole at the same spot — there is no barrier out
+on its own and no unguarded hole. Cones are scenery: they only ever appear as part of a
+road-works site, never on their own and never in front of a hole.
 Earn up to **3 stars** per level: finish + coin goal + clean (crash-free) driving.
 Near misses give bonus points!
 
 ## Features
 
 - **Reference-style home screen** — original AI-generated tropical town + cute 3D-style hero car with idle animation, top HUD (profile / coins / hearts with a *real* regeneration timer), treasure-milestone progress bar, reward Boost selector, big green `LEVEL n` button and a 5-tab bottom navigation. Every button works.
-- **Real gameplay (Phaser 3)** — scrolling themed roads, frame-rate independent steering/acceleration/braking, traffic cars & trucks that keep a gap, queue and overtake, construction road works (mostly a blocker with cones fencing the closed lane; the odd guarded pit, marked by two cones on its far corners and nothing in front of the hole), spinning coin chains, near-miss bonuses, crash invulnerability/blink, camera shake, particles, countdown, pause and auto-pause when the tab is hidden.
+- **Real gameplay (Phaser 3)** — scrolling themed roads, frame-rate independent steering/acceleration/braking, traffic cars & trucks that keep a gap, queue and overtake, construction road works — every one a single site: a striped blocker with cones either side, standing at the near lip of the open pit it guards, so the blocker never appears without its hole and a hole is never left unguarded, spinning coin chains, near-miss bonuses, crash invulnerability/blink, camera shake, particles, countdown, pause and auto-pause when the tab is hidden.
 - **50 levels** — Sunny Streets all the way to Champion's Highway: every level has its own name, distance, coin goal, traffic density/speed and roadside theme (palms, cacti, city buildings…), ramping smoothly from 1,200 m to 7,080 m, plus an **Endless mode** with ramping difficulty and a saved best score. The level picker opens scrolled to your current level.
 - **Progression & economy** — coins, hearts (start a run = 1 heart, finishing refunds it, +1 every 90 s, or buy for 50 coins), level unlocks & stars, Boost ×1/×2/×3 (bigger rewards, busier roads), 7-day daily rewards, a repeatable 250-coin treasure milestone.
 - **Garage — 12 original cartoon cars** — Ruby, Officer Sky, Sunny Taxi, Minty, Blaze, Coco, Bolt, Bumble, Rocky, Comet, Apex and Nova. Each has its own hero artwork, top-down sprite styling (racing stripes, spoilers, roof racks, neon supercar glow…) and Speed/Acceleration/Handling stats that genuinely change handling & top speed, from the free starter to the 12,000-coin Nova.

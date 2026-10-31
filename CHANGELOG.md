@@ -18,12 +18,12 @@ of the in-game **Settings** screen.
   the road; they now only ever appear as part of a road-works site — fencing the
   blocker, and marking the far corners of a pit — so every cone you see means
   something.
-- **Far fewer holes.** About two sites in three are now a plain road blocker; the
-  guarded pit appears with roughly a quarter of blockers, and a lone open pit is rare
-  (measured over 600 spawns: 70% blocker only, 24% blocker + pit, 5% lone pit — pits in
-  30% of sites instead of every single one).
-- Nothing is placed in front of a pit any more: the near lip keeps only its warning
-  tape, with the two cones on the far corners, which keeps the site readable.
+- **A blocker and its hole are one site, always.** The blocker stands at the near lip
+  of the open pit it guards (84 px apart, one car length), so there is never a barrier
+  out on its own and never an unguarded hole — measured over 500 spawns: 500 pairs,
+  0 blocker-only, 0 pit-only.
+- Nothing is placed in front of a pit: the near lip keeps only its warning tape, with
+  the two cones on the far corners, which keeps the site readable.
 - Blockers are a full crash (a life); pits jolt the car, cut its speed and spoil the
   clean run without costing a life.
 - Coin chains no longer spawn over a blocked lane.
