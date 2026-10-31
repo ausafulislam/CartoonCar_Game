@@ -3,7 +3,7 @@
 html, body, #root { height: 100%; }
 body {
   margin: 0;
-  font-family: 'Fredoka', 'Trebuchet MS', 'Segoe UI', system-ui, sans-serif;
+  font-family: 'Fredoka Variable', 'Fredoka', 'Trebuchet MS', 'Segoe UI', system-ui, sans-serif;
   background: #0d3f6e;
   color: #3d2f21;
   overflow: hidden;
@@ -594,7 +594,22 @@ h1, h2, h3, p { margin-top: 0; }
 .toggle-row.on .knob { left: 25px; }
 .howto-list { margin: 0; padding-left: 19px; line-height: 1.5; font-size: 14px; color: #5b4a38; }
 .howto-list li { margin-bottom: 7px; }
-.version-line { text-align: center; color: #fff; font-weight: 600; font-size: 12.5px; text-shadow: 0 1px 5px rgba(0, 50, 100, 0.55); }
+/* Footer sits on the light end of the page gradient, so it uses dark ink. */
+.version-line {
+  text-align: center; color: #33566f; font-weight: 600; font-size: 12.5px;
+  padding: 0 8px; text-shadow: 0 1px 0 rgba(255, 255, 255, 0.65);
+}
+.build-credit {
+  display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+  width: 100%; margin: 3px 0 12px; padding: 2px 0;
+  color: #33566f; font-weight: 700; font-size: 12.5px; text-decoration: none;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.65);
+}
+.build-credit strong {
+  color: #c9760a; text-decoration: underline; text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+.build-credit:active { opacity: 0.75; }
 
 /* ================================ Modals ================================ */
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }

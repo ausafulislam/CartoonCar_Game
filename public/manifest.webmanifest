@@ -32,17 +32,17 @@
   ],
   "screenshots": [
     {
-      "src": "/docs/screenshots/home.png",
+      "src": "/screenshots/home.png",
       "sizes": "430x880",
       "type": "image/png",
       "label": "Home screen",
       "form_factor": "narrow"
     },
     {
-      "src": "/docs/screenshots/gameplay.png",
+      "src": "/screenshots/gameplay.png",
       "sizes": "430x880",
       "type": "image/png",
-      "label": "Gameplay",
+      "label": "Gameplay — construction road works",
       "form_factor": "narrow"
     }
   ]

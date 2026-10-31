@@ -1,6 +1,7 @@
 import { Home, Trash2, Vibrate, Volume2, VolumeX } from 'lucide-react'
 import type { SaveData } from '../lib/gameData'
 import { clickSfx } from '../components/ui'
+import { APP_VERSION, BUILDER_NAME, BUILDER_URL } from '../lib/appInfo'
 
 interface SettingsProps {
   save: SaveData
@@ -64,7 +65,7 @@ export function SettingsScreen({ save, onBack, onSettings, onResetRequest }: Set
           <h2>How to play</h2>
           <ul className="howto-list">
             <li><strong>Goal:</strong> drive the full distance to finish the level. Collect coins and avoid crashes to earn up to 3 stars.</li>
-            <li><strong>Crashes:</strong> 3 crashes ends the run. Cones just slow you down. Near misses earn bonus points!</li>
+            <li><strong>Hazards:</strong> 3 crashes ends the run. Road blockers cost a life, open construction pits jolt the car and cost speed. Near misses earn bonus points!</li>
             <li><strong>Keyboard:</strong> ◀ ▶ or A / D to steer, ▲ / W to speed up, ▼ / S to brake, P or Esc to pause.</li>
             <li><strong>Touch:</strong> hold the big ◀ ▶ buttons to steer, GAS to speed up and BRAKE to slow down.</li>
             <li><strong>Hearts:</strong> starting a run uses 1 heart. Finishing a level gives it back! Hearts refill over time.</li>
@@ -81,7 +82,16 @@ export function SettingsScreen({ save, onBack, onSettings, onResetRequest }: Set
           </button>
         </div>
 
-        <p className="version-line">Cartoon Car Adventure · v1.0 · Made with React, TypeScript &amp; Phaser</p>
+        <p className="version-line">Cartoon Car Adventure · v{APP_VERSION} · Made with React, TypeScript &amp; Phaser</p>
+        <a
+          className="build-credit"
+          href={BUILDER_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={() => clickSfx()}
+        >
+          Built by <strong>{BUILDER_NAME}</strong>
+        </a>
       </div>
     </section>
   )

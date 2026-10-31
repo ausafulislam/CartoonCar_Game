@@ -1,17 +1,19 @@
 {
   "name": "cartoon-car-adventure",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
+    "typecheck": "tsc -b",
     "test:smoke": "node scripts/smoke.mjs",
     "test:progression": "node scripts/progression.mjs"
   },
   "dependencies": {
+    "@fontsource-variable/fredoka": "^5.3.0",
     "lucide-react": "^1.61.0",
     "phaser": "^3.90.0",
     "react": "^19.3.1",
@@ -28,5 +30,24 @@
     "typescript": "~6.0.3",
     "vite": "^8.3.4"
   },
-  "description": "Cartoon Car Adventure — a colorful, family-friendly cartoon driving game for the browser (React + TypeScript + Phaser 3)."
+  "description": "Cartoon Car Adventure — a colourful, family-friendly cartoon driving game for the browser (React + TypeScript + Phaser 3).",
+  "homepage": "https://ausafulislam.vercel.app",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ausafulislam/CartoonCar_Game.git"
+  },
+  "author": "Ausaf (https://ausafulislam.vercel.app)",
+  "keywords": [
+    "game",
+    "phaser",
+    "react",
+    "typescript",
+    "vite",
+    "pwa",
+    "driving-game",
+    "html5-game"
+  ],
+  "engines": {
+    "node": ">=18"
+  }
 }

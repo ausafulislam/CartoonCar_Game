@@ -12,35 +12,11 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,png,jpg,jpeg,svg,woff,woff2}'],
         globIgnores: [
           '**/test-shots/**',
-          '**/docs/screenshots/**',
-          '**/favicon.svg',
-          '**/icons.svg',
+          // Install-prompt screenshots are fetched by the browser on demand, not
+          // needed in the offline precache.
+          '**/screenshots/**',
         ],
         maximumFileSizeToCacheInBytes: 10 * 1024 * 1024, // 10 MB per file
-        runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'google-fonts-cache',
-              expiration: {
-                maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
-              },
-            },
-          },
-          {
-            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'gstatic-fonts-cache',
-              expiration: {
-                maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
-              },
-            },
-          },
-        ],
       },
       manifest: {
         id: '/',
@@ -77,17 +53,17 @@ export default defineConfig({
         ],
         screenshots: [
           {
-            src: '/docs/screenshots/home.png',
+            src: '/screenshots/home.png',
             sizes: '430x880',
             type: 'image/png',
             label: 'Home screen',
             form_factor: 'narrow',
           },
           {
-            src: '/docs/screenshots/gameplay.png',
+            src: '/screenshots/gameplay.png',
             sizes: '430x880',
             type: 'image/png',
-            label: 'Gameplay',
+            label: 'Gameplay — construction road works',
             form_factor: 'narrow',
           },
         ],

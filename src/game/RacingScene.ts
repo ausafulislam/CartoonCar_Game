@@ -473,7 +473,7 @@ class RacingScene extends Phaser.Scene {
     // countdown
     this.countText = this.add
       .text(W / 2, H / 2 - 90, '3', {
-        fontFamily: 'Fredoka, "Trebuchet MS", sans-serif',
+        fontFamily: '"Fredoka Variable", Fredoka, "Trebuchet MS", sans-serif',
         fontSize: '96px',
         fontStyle: 'bold',
         color: '#ffffff',
@@ -689,7 +689,7 @@ class RacingScene extends Phaser.Scene {
     if (!this.pickupLabel) {
       this.pickupLabel = this.add
         .text(0, 0, label, {
-          fontFamily: 'Fredoka, "Trebuchet MS", sans-serif',
+          fontFamily: '"Fredoka Variable", Fredoka, "Trebuchet MS", sans-serif',
           fontSize: '22px',
           fontStyle: 'bold',
           color,
